@@ -350,7 +350,7 @@ def do_constant_curr_discharge(debug):
     # display.changescreen(display.SCREEN_USER_SWIPE)
 
     # Initialize SMU output
-    smu.current_range = TEST_PARAM["max_discharge_current"]  # Use fixed source range
+    smu.source_current_range = TEST_PARAM["max_discharge_current"]  # Use fixed source range
     smu.source_current = -1*TEST_PARAM["discharge_current"]   # Negative current because drawing current from battery
 
     TEST_PARAM["discharge_start_time"] = str(datetime.now())
