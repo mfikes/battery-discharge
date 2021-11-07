@@ -106,7 +106,7 @@ def config_system(TEST_PARAM, smu, do_beeps, debug):
     smu.auto_range_source()
     smu.voltage_nplc = 1
 
-    dialog_text = "Make 4-wire connections to your battery at the SMU " + terminals + " and then press OK."
+    dialog_text = "Make 4-wire connections to your battery at the SMU " + terminals + " terminals and then press OK."
     if do_beeps:
         smu.beep(2400, 0.08)
     
