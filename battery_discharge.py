@@ -9,7 +9,7 @@ Original TSP version written by: Keithley Applications Engineering (Al Ivons)
 ***********************************************************
 
 Revision History:
-        * Originally released Nov 2021.
+        * This Python port originally released Nov 2021.
 
 This script is example code designed to discharge a battery and create a battery model for use
 in a Keithley Model 2281S-20-6 Battery Simulator and Precision DC Power Supply.  It will drive
