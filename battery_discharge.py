@@ -358,7 +358,7 @@ def do_constant_curr_discharge(debug):
 
     delay(0.1)	# Allow some settling time; required time is TBD
 
-    # timer.cleartime()	# Reset timer to zero
+    t0 = time.time()
 
     if debug:
         print("\nIn do_constant_curr_discharge()...")
@@ -376,7 +376,7 @@ def do_constant_curr_discharge(debug):
         # Bug in PyMeasure... should be able to do smu.auto_zero = "ONCE"
         smu.auto_zero = True
 
-        tstart_meas_intrvl = time.time()
+        tstart_meas_intrvl = round(time.time() - t0, 3)
         
         vload_tbl[counter], voc_tbl[counter], esr_tbl[counter] = meas_esr(0, 0.01)  # Proper settle_time is still TBD
 
@@ -394,7 +394,7 @@ def do_constant_curr_discharge(debug):
             quit = True
             break
 
-        while (time.time() - tstart_meas_intrvl) < (meas_intrvl - azero_duration):
+        while (round(time.time() - t0, 3) - tstart_meas_intrvl) < (meas_intrvl - azero_duration):
             delay(loop_delay)
 
     smu.source_current = 0
