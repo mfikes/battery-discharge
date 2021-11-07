@@ -48,6 +48,9 @@ def prompt_choice(prompt, choices):
     
 # ********** Define Utility Functions **********
 
+def Dround(v,d):
+    return round(v,d)
+
 def meas_esr(smu, test_curr, settle_time):
 
     # load_curr and test_curr are load currents, which are drawn from the battery.
@@ -166,7 +169,7 @@ def config_test(do_beeps, debug):
     TEST_PARAM["comment"] = comment
 
     if do_beeps:
-	smu.beep(2400, 0.08)
+        smu.beep(2400, 0.08)
 
     discharge_type = prompt_choice("Select Discharge Type:", ["Constant Curr", "Current List"])
 
@@ -181,9 +184,9 @@ def config_test(do_beeps, debug):
         TEST_PARAM["discharge_type"] = "CONSTANT"
         
         dialog_text = "Discharge Curr (1E-6 to " + str(max_allowed_current) + "A)"
-        TEST_PARAM["discharge_curr"] = float(input(dialog_text))
-        if TEST_PARAM["discharge_curr"] < 1e-6 or TEST_PARAM["discharge_curr"] > max_allowed_current:
-            raise ValueError("Unallowed discharge current: " + str(TEST_PARAM["discharge_curr"]))
+        TEST_PARAM["discharge_current"] = float(input(dialog_text))
+        if TEST_PARAM["discharge_current"] < 1e-6 or TEST_PARAM["discharge_current"] > max_allowed_current:
+            raise ValueError("Unallowed discharge current: " + str(TEST_PARAM["discharge_current"]))
 
         TEST_PARAM["discharge_curr_list"] = None   # If discharge_type is CONSTANT, then there is no current list
         TEST_PARAM["max_discharge_current"] = TEST_PARAM["discharge_current"] # and discharge_current is the max_discharge_current
@@ -197,17 +200,18 @@ def config_test(do_beeps, debug):
     else:  # If Current List selected
 
         TEST_PARAM["discharge_type"] = "LIST"
-        TEST_PARAM["discharge_curr_list"] = []   # Create array to hold current list values
         TEST_PARAM["discharge_current"] = None	 # If discharge_type is LIST, then there is no constant discharge_current
 
         npoints = int(input("Number of Pts in List (2 to 10)"))
         if npoints < 2 or npoints > 10:
             raise ValueError("Unallowed number of points: " + str(npoints))
 
+        TEST_PARAM["discharge_curr_list"] = [None] * npoints   # Create array to hold current list values
+        
         if debug:
             print("\nTEST_PARAM[\"discharge_type\"] = " + TEST_PARAM["discharge_type"])
-	    print("\nTEST_PARAM[\"discharge_current\"] = " + str(TEST_PARAM["discharge_current"]))
-	    print("\nTEST_PARAM[\"discharge_curr_list\"] = " + str(TEST_PARAM["discharge_curr_list"]))
+            print("\nTEST_PARAM[\"discharge_current\"] = " + str(TEST_PARAM["discharge_current"]))
+            print("\nTEST_PARAM[\"discharge_curr_list\"] = " + str(TEST_PARAM["discharge_curr_list"]))
             print("\nnpoints = " + str(npoints))
 
         average_curr = 0
@@ -230,8 +234,8 @@ def config_test(do_beeps, debug):
             list_duration = list_duration + TEST_PARAM["discharge_curr_list"][i]["duration"]
 
             if debug:
-                print("\nTEST_PARAM[\"discharge_curr_list\"][" + str(i) + "]["current"] = " + TEST_PARAM["discharge_curr_list"][i]["current"])
-                print("\nTEST_PARAM[\"discharge_curr_list\"][" + str(i) + "]["duration"] = " + TEST_PARAM["discharge_curr_list"][i]["duration"])
+                print("\nTEST_PARAM[\"discharge_curr_list\"][" + str(i) + "][\"current\"] = " + str(TEST_PARAM["discharge_curr_list"][i]["current"]))
+                print("\nTEST_PARAM[\"discharge_curr_list\"][" + str(i) + "][\"duration\"] = " + str(TEST_PARAM["discharge_curr_list"][i]["duration"]))
 
         average_curr = average_curr / list_duration
         TEST_PARAM["discharge_curr_list_average_curr"] = average_curr
@@ -296,7 +300,7 @@ def config_test(do_beeps, debug):
             raise ValueError("Unalllowed measure interval: " + str(TEST_PARAM["measure_interval"]))
 
         if debug:
-            print("\nTEST_PARAM[\"measure_interval\"] = " + TEST_PARAM["measure_interval"])
+            print("\nTEST_PARAM[\"measure_interval\"] = " + str(TEST_PARAM["measure_interval"]))
 
         
         
