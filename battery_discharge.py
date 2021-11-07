@@ -407,3 +407,63 @@ def do_constant_curr_discharge(debug):
     if debug:
         print("\nTEST_PARAM[\"discharge_stop_time\"] = "+ TEST_PARAM["discharge_stop_time"])
         print("\nBATT_MODEL_RAW[\"capacity\"] = " + str(BATT_MODEL_RAW["capacity"]))
+
+
+def run_test(do_beeps, debug):
+
+    if debug:
+        print("\nCall config_system")
+
+    config_system(do_beeps, debug)
+
+    if debug:
+        print("\nCall config_test")
+
+    config_test(do_beeps, debug)
+
+    dialog_text = "Select OK to START TEST, or Cancel to ABORT and EXIT."
+
+    if do_beeps:
+        smu.beep(2400, 0.08)
+        
+    selection = prompt_choice(dialog_text, ["OK", "Cancel"])
+    if selection == "Cancel":
+        raise Exception("run_test aborted by user")
+
+    if TEST_PARAM["discharge_type"] == "CONSTANT":
+
+        if debug:
+            print("\nCall do_constant_curr_discharge()...")
+
+        do_constant_curr_discharge(debug)
+
+    else:
+
+        if debug:
+            print("\nCall do_curr_list_discharge()...")
+
+	#do_curr_list_discharge(debug)
+
+    if debug:
+        print("\nCall extract_model()...")
+
+    #extract_model(debug)
+
+    if debug:
+        print("\nCall save_model()...")
+
+    #save_model(debug)
+
+debug = True
+do_beeps = True
+    
+dialog_text = "Follow all manufacturer's guidelines to ensure safe operation when discharging a battery (especially a LITHIUM ION battery)!"
+
+selection = prompt_choice(dialog_text, ["OK", "Cancel"])
+
+if selection == "Cancel":
+    raise Exception("run_test aborted by user")
+
+run_test(do_beeps, debug)
+
+smu.beep(2400, 0.08)
