@@ -33,8 +33,25 @@ def delay(interval):
 
 adapter = PrologixAdapter('/dev/cu.usbserial-PXEFMYB9')
 smu = Keithley2400(adapter.gpib(26))
-TEST_PARAM = {}
 
+# ********** Declare global tables **********
+
+TEST_PARAM = {}   # Global table to hold various test parameters and share them among different functions
+
+BATT_MODEL_RAW = {}	         # Global table to hold "raw" measured and calculated data for battery model
+BATT_MODEL_RAW["voc"] = {}       # Global table to hold all measured open-circuit voltage values
+BATT_MODEL_RAW["vload"] = {}     # Global table to hold all voltage values measured at load (i.e. discharge) current
+BATT_MODEL_RAW["esr"] = {}       # Global table to hold all measured/calculated internal resistance values
+BATT_MODEL_RAW["tstamp"] = {}    # Global table to hold all timestamp values
+
+BATT_MODEL = {}	                 # Global table to hold final model values extracted from BATT_MODEL_RAW
+BATT_MODEL["voc"] = {}           # Global table to hold final open-circuit voltage values extracted from BATT_MODEL_RAW.voc
+BATT_MODEL["vload"] = {}         # Global table to hold final voltage-at-load values extracted from BATT_MODEL_RAW.vload
+BATT_MODEL["esr"] = {}           # Global table to hold final internal resistance values extracted from BATT_MODEL_RAW.esr
+BATT_MODEL["tstamp"] = {}        # Global table to hold final timestamp values extracted from BATT_MODEL_RAW.tstamp
+BATT_MODEL["soc"] = {}           # Global table to hold state-of-charge values (0 to 100%, in 1% increments)
+
+# ********** Define Utility Functions **********
 
 def prompt_choice(prompt, choices):
     questions = [
@@ -45,8 +62,6 @@ def prompt_choice(prompt, choices):
         ]
     answers = inquirer.prompt(questions)
     return answers["choice"]
-    
-# ********** Define Utility Functions **********
 
 def Dround(v,d):
     return round(v,d)
@@ -303,4 +318,35 @@ def config_test(do_beeps, debug):
             print("\nTEST_PARAM[\"measure_interval\"] = " + str(TEST_PARAM["measure_interval"]))
 
         
-        
+def do_constant_curr_discharge(debug):
+
+    # Create local aliases for global tables
+    voc_tbl = BATT_MODEL_RAW["voc"]
+    vload_tbl = BATT_MODEL_RAW["vload"]
+    esr_tbl = BATT_MODEL_RAW["esr"]
+    tstamp_tbl = BATT_MODEL_RAW"tstamp"]
+
+    # Declare other local variables
+    dialog_text = None
+
+    azero_overhead = 0.00133 # Execution overhead associated with autozero; appears to vary slightly with NPLC value.
+                             # Includes execution overhead for timer.cleartime() y=timer.gettime(), which is approx 10us.
+			     # Values determined using 2461 with Rev 1.6.1a FW
+
+    linefreq = 60
+    azero_duration = 2 * smu.voltage_nplc / linefreq + azero_overhead  # Approximate execution time of autozero
+
+    meas_intrvl = TEST_PARAM["measure_interval"]
+    loop_delay = max(meas_intrvl / 10000, 0.001)
+    tstart_meas_intrvl = None
+
+    counter = 0
+    quit = False
+
+    # Set up display
+    # display.clear()
+    # display.changescreen(display.SCREEN_USER_SWIPE)
+
+    # Initialize SMU output
+    smu.current_range = TEST_PARAM["max_discharge_current"]  # Use fixed source range
+    smu.source_current = -1*TEST_PARAM["discharge_current"]   # Negative current because drawing current from battery
