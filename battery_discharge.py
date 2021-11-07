@@ -26,6 +26,8 @@ WARNING:        This script presently does not include any safeguards to prevent
 
 from pymeasure.instruments.keithley import Keithley2400
 from pymeasure.adapters import PrologixAdapter
+from datetime import datetime
+import time
 import inquirer
 
 def delay(interval):
@@ -66,7 +68,7 @@ def prompt_choice(prompt, choices):
 def Dround(v,d):
     return round(v,d)
 
-def meas_esr(smu, test_curr, settle_time):
+def meas_esr(test_curr, settle_time):
 
     # load_curr and test_curr are load currents, which are drawn from the battery.
     # To draw current FROM the battery, the programmed current level must be negative (or zero).
@@ -294,28 +296,28 @@ def config_test(do_beeps, debug):
             print("\nmaxdur = " + str(maxdur))
             print("\nlen(maxdur_indices) = " + str(len(maxdur_indices)))
 
-        # Set maximum cut-off voltage to 98% of TEST_PARAM["initial_voltage"]   
-        cov_max = Dround(0.98 * TEST_PARAM["initial_voc"], 2)
+    # Set maximum cut-off voltage to 98% of TEST_PARAM["initial_voltage"]   
+    cov_max = Dround(0.98 * TEST_PARAM["initial_voc"], 2)
 
-        # Set default cut-off voltage to 50% of TEST_PARAM["initial_voltage"].
-        cov_default = Dround(0.5 * TEST_PARAM["initial_voc"], 2)
+    # Set default cut-off voltage to 50% of TEST_PARAM["initial_voltage"].
+    cov_default = Dround(0.5 * TEST_PARAM["initial_voc"], 2)
 
-        dialog_text = "Cut-off Voltage (0.1 to " + str(cov_max) + "V)" # 100mV is arbitrary minimum
-        TEST_PARAM["vcutoff"] = float(input(dialog_text))
-        if TEST_PARAM["vcutoff"] < 0.1 or TEST_PARAM["vcutoff"] > cov_max:
-            raise ValueError("Unallowed cutoff voltage: " + str(TEST_PARAM["vcutoff"]))
+    dialog_text = "Cut-off Voltage (0.1 to " + str(cov_max) + "V)" # 100mV is arbitrary minimum
+    TEST_PARAM["vcutoff"] = float(input(dialog_text))
+    if TEST_PARAM["vcutoff"] < 0.1 or TEST_PARAM["vcutoff"] > cov_max:
+        raise ValueError("Unallowed cutoff voltage: " + str(TEST_PARAM["vcutoff"]))
 
-        if debug:
-            print("\ncov_max = "+ str(cov_max))
-            print("\ncov_default = "+ str(cov_default))
-            print("TEST_PARAM[\"vcutoff\"] = "+ str(TEST_PARAM["vcutoff"]))
+    if debug:
+        print("\ncov_max = "+ str(cov_max))
+        print("\ncov_default = "+ str(cov_default))
+        print("TEST_PARAM[\"vcutoff\"] = "+ str(TEST_PARAM["vcutoff"]))
 
-        TEST_PARAM["measure_interval"] = float(input("ESR Meas Interval (0.08 to 600s)"))
-        if TEST_PARAM["measure_interval"] < 0.08 or TEST_PARAM["measure_interval"] > 600:
-            raise ValueError("Unalllowed measure interval: " + str(TEST_PARAM["measure_interval"]))
+    TEST_PARAM["measure_interval"] = float(input("ESR Meas Interval (0.08 to 600s)"))
+    if TEST_PARAM["measure_interval"] < 0.08 or TEST_PARAM["measure_interval"] > 600:
+        raise ValueError("Unalllowed measure interval: " + str(TEST_PARAM["measure_interval"]))
 
-        if debug:
-            print("\nTEST_PARAM[\"measure_interval\"] = " + str(TEST_PARAM["measure_interval"]))
+    if debug:
+        print("\nTEST_PARAM[\"measure_interval\"] = " + str(TEST_PARAM["measure_interval"]))
 
         
 def do_constant_curr_discharge(debug):
@@ -324,7 +326,7 @@ def do_constant_curr_discharge(debug):
     voc_tbl = BATT_MODEL_RAW["voc"]
     vload_tbl = BATT_MODEL_RAW["vload"]
     esr_tbl = BATT_MODEL_RAW["esr"]
-    tstamp_tbl = BATT_MODEL_RAW"tstamp"]
+    tstamp_tbl = BATT_MODEL_RAW["tstamp"]
 
     # Declare other local variables
     dialog_text = None
@@ -333,7 +335,7 @@ def do_constant_curr_discharge(debug):
                              # Includes execution overhead for timer.cleartime() y=timer.gettime(), which is approx 10us.
 			     # Values determined using 2461 with Rev 1.6.1a FW
 
-    linefreq = 60
+    linefreq = float(smu.ask(":SYST:LFR?"))
     azero_duration = 2 * smu.voltage_nplc / linefreq + azero_overhead  # Approximate execution time of autozero
 
     meas_intrvl = TEST_PARAM["measure_interval"]
@@ -350,3 +352,58 @@ def do_constant_curr_discharge(debug):
     # Initialize SMU output
     smu.current_range = TEST_PARAM["max_discharge_current"]  # Use fixed source range
     smu.source_current = -1*TEST_PARAM["discharge_current"]   # Negative current because drawing current from battery
+
+    TEST_PARAM["discharge_start_time"] = str(datetime.now())
+    smu.source_enabled = True
+
+    delay(0.1)	# Allow some settling time; required time is TBD
+
+    # timer.cleartime()	# Reset timer to zero
+
+    if debug:
+        print("\nIn do_constant_curr_discharge()...")
+        print("\nazero_overhead = " + str(azero_overhead)) 
+        print("\nazero_duration = "+ str(azero_duration))
+        print("\nmeas_intrvl = " + str(meas_intrvl))
+        print("loop_delay = " + str(loop_delay))
+        print("\nTEST_PARAM[\"discharge_start_time\"] = " + TEST_PARAM["discharge_start_time"])
+        print("\ncounter, tstamp, voc, vload, esr")
+
+    while (quit == False):
+
+        counter = counter + 1
+
+        # Bug in PyMeasure... should be able to do smu.auto_zero = "ONCE"
+        smu.auto_zero = True
+
+        tstart_meas_intrvl = time.time()
+        
+        vload_tbl[counter], voc_tbl[counter], esr_tbl[counter] = meas_esr(0, 0.01)  # Proper settle_time is still TBD
+
+        tstamp_tbl[counter] = tstart_meas_intrvl
+
+        if debug:
+            print(counter, tstamp_tbl[counter], voc_tbl[counter], vload_tbl[counter], esr_tbl[counter])
+
+        # display.settext(display.TEXT1, "Total time="..Dround(timer.gettime(),0).." s")
+
+        # dialog_text = "Voc="..string.format("%0.2f", voc_tbl[counter]).." Vload="..string.format("%0.2f", vload_tbl[counter]).." ESR="..string.format("%0.4f", esr_tbl[counter])
+	# display.settext(display.TEXT2, dialog_text)
+
+        if vload_tbl[counter] <= TEST_PARAM["vcutoff"]:
+            quit = True
+            break
+
+        while (time.time() - tstart_meas_intrvl) < (meas_intrvl - azero_duration):
+            delay(loop_delay)
+
+        smu.source_current = 0
+        smu.source_enabled = False
+
+        TEST_PARAM["discharge_stop_time"] = str(datetime.now())
+
+        BATT_MODEL_RAW["capacity"] = TEST_PARAM["discharge_current"] * tstamp_tbl[counter] / 3600
+
+        if debug:
+            print("\nTEST_PARAM[\"discharge_stop_time\"] = "+ TEST_PARAM["discharge_stop_time"])
+            print("\nBATT_MODEL_RAW[\"capacity\"] = " + str(BATT_MODEL_RAW["capacity"]))
