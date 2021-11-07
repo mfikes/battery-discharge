@@ -23,3 +23,29 @@ WARNING:        This script presently does not include any safeguards to prevent
                 voltage for a LITHIUM ION battery to ensure safe operation of the test setup and program.
 
 """
+
+from pymeasure.instruments.keithley import Keithley2400
+from pymeasure.adapters import PrologixAdapter
+
+def delay(interval):
+    time.sleep(interval)
+
+def setup_smu():
+    adapter = PrologixAdapter('/dev/cu.usbserial-PXEFMYB9')
+    return Keithley2400(adapter.gpib(26))
+
+def meas_esr(smu, test_curr, settle_time):
+
+    # load_curr and test_curr are load currents, which are drawn from the battery.
+    # To draw current FROM the battery, the programmed current level must be negative (or zero).
+    
+    test_curr = -abs(test_curr)           # Ensure test_curr has proper sense
+    load_curr = smu.source_current        # Will be negative
+    vload = smu.voltage                   # Battery voltage at load_curr
+    smu.source_current = -abs(test_curr)  # test_curr equal to zero corresponds to an open circuit
+    if settle_time > 0:
+        delay(settle_time)
+    vtest = smu.voltage                   # Battery voltage at test_curr; vtest is Voc if test_curr = 0
+    smu.source_current = load_curr
+    esr = abs((vtest - vload) / (test_curr - load_curr)) # (V2-V1)/(I2-I1); ensure positive resistance
+    return vload, vtest, esr
