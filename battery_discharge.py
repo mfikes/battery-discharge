@@ -267,4 +267,36 @@ def config_test(do_beeps, debug):
                     max_dur_index = maxdur_indices[i]
 
         TEST_PARAM["discharge_curr_list_max_dur_index"] = max_dur_index
+
+        if debug:
+            print("\nTEST_PARAM[\"discharge_curr_list_average_curr\"] = " + str(TEST_PARAM["discharge_curr_list_average_curr"]))
+            print("\nTEST_PARAM[\"discharge_curr_list_duration\"] = " + str(TEST_PARAM["discharge_curr_list_duration"]))
+            print("\nTEST_PARAM[\"max_discharge_current\"] = " + str(TEST_PARAM["max_discharge_current"]))
+            print("\nmaxdur = " + str(maxdur))
+            print("\nlen(maxdur_indices) = " + str(len(maxdur_indices)))
+
+        # Set maximum cut-off voltage to 98% of TEST_PARAM["initial_voltage"]   
+        cov_max = Dround(0.98 * TEST_PARAM["initial_voc"], 2)
+
+        # Set default cut-off voltage to 50% of TEST_PARAM["initial_voltage"].
+        cov_default = Dround(0.5 * TEST_PARAM["initial_voc"], 2)
+
+        dialog_text = "Cut-off Voltage (0.1 to " + str(cov_max) + "V)" # 100mV is arbitrary minimum
+        TEST_PARAM["vcutoff"] = float(input(dialog_text))
+        if TEST_PARAM["vcutoff"] < 0.1 or TEST_PARAM["vcutoff"] > cov_max:
+            raise ValueError("Unallowed cutoff voltage: " + str(TEST_PARAM["vcutoff"]))
+
+        if debug:
+            print("\ncov_max = "+ str(cov_max))
+            print("\ncov_default = "+ str(cov_default))
+            print("TEST_PARAM[\"vcutoff\"] = "+ str(TEST_PARAM["vcutoff"]))
+
+        TEST_PARAM["measure_interval"] = float(input("ESR Meas Interval (0.08 to 600s)"))
+        if TEST_PARAM["measure_interval"] < 0.08 or TEST_PARAM["measure_interval"] > 600:
+            raise ValueError("Unalllowed measure interval: " + str(TEST_PARAM["measure_interval"]))
+
+        if debug:
+            print("\nTEST_PARAM[\"measure_interval\"] = " + TEST_PARAM["measure_interval"])
+
+        
         
