@@ -26,6 +26,7 @@ WARNING:        This script presently does not include any safeguards to prevent
 
 from pymeasure.instruments.keithley import Keithley2400
 from pymeasure.adapters import PrologixAdapter
+import inquirer
 
 def delay(interval):
     time.sleep(interval)
@@ -33,6 +34,18 @@ def delay(interval):
 def setup_smu():
     adapter = PrologixAdapter('/dev/cu.usbserial-PXEFMYB9')
     return Keithley2400(adapter.gpib(26))
+
+def prompt_choice(prompt, choices):
+    questions = [
+        inquirer.List('choice',
+                      message=prompt,
+                      choices=choices,
+                      ),
+        ]
+    answers = inquirer.prompt(questions)
+    return answers["choice"]
+    
+# ********** Define Utility Functions **********
 
 def meas_esr(smu, test_curr, settle_time):
 
@@ -49,3 +62,40 @@ def meas_esr(smu, test_curr, settle_time):
     smu.source_current = load_curr
     esr = abs((vtest - vload) / (test_curr - load_curr)) # (V2-V1)/(I2-I1); ensure positive resistance
     return vload, vtest, esr
+
+# ********** Define Primary Test Functions **********
+
+def config_system(TEST_PARAM, smu, do_beeps, debug):
+
+    smu.reset()
+
+    # display.changescreen(display.SCREEN_HOME)
+
+    # eventlog.clear()
+
+    # Cofigure terminals
+    if do_beeps:
+        smu.beep(2400,0.08)
+
+    terminals = prompt_choice("Select TERMINALS you want to use:", ["Front", "Rear"])
+
+    if terminals == "Front":
+        smu.use_front_terminals()
+    else:
+        smu.use_rear_terminals()
+
+    TEST_PARAM["terminals"] = terminals
+
+    # Configure source settings
+    smu.source_mode = "current"
+    smu.output_off_state = 'HIMP'      # SMU is disconnected from output terminals when SMU output is OFF
+
+    # TODO disable source readback
+    # Original TSP smu.source.readback = smu.OFF
+    smu.source_current = 0.0           # Amps; zero is default value
+    smu.source_current_range = 0.001   # Amps; automatically disables source autorange.
+    smu.source_delay = 0.0             # Seconds; automatically disables source autodelay
+
+    # Configure measure setting
+    smu.measure_voltage(1,210,auto_range=False) # TODO this fails
+    smu.wires = 4
