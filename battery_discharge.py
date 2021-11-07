@@ -31,9 +31,8 @@ import inquirer
 def delay(interval):
     time.sleep(interval)
 
-def setup_smu():
-    adapter = PrologixAdapter('/dev/cu.usbserial-PXEFMYB9')
-    return Keithley2400(adapter.gpib(26))
+adapter = PrologixAdapter('/dev/cu.usbserial-PXEFMYB9')
+smu = Keithley2400(adapter.gpib(26))
 
 def prompt_choice(prompt, choices):
     questions = [
@@ -138,13 +137,13 @@ def config_system(TEST_PARAM, smu, do_beeps, debug):
         print("\nTEST_PARAM[\"initial_voc\"] = " + str(TEST_PARAM["initial_voc"]))
 
     if TEST_PARAM["initial_voc"] <= 0:
-        raise "Negative or zero Initial Voc detected; ConfigSystem aborted"
+        raise ValueError("Negative or zero Initial Voc detected; config_system aborted")
 
-    dialog_text = "Measured battery voltage = " + string.format("%.3f",TEST_PARAM["initial_voc"]) + "V.\nPress OK to continue or Cancel to quit."
+    dialog_text = "Measured battery voltage = " + "{0:.3f}".format(TEST_PARAM["initial_voc"]) + "V.\nPress OK to continue or Cancel to quit."
     if do_beeps:
         smu.beep(2400, 0.08)
     choice = prompt_choice(dialog_text, ["OK", "CANCEL"])
     if choice == "CANCEL":
-        raise "ConfigSystem aborted by user"
+        raise Exception("config_system aborted by user")
 
     return TEST_PARAM
