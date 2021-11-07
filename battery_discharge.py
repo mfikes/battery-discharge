@@ -33,6 +33,8 @@ def delay(interval):
 
 adapter = PrologixAdapter('/dev/cu.usbserial-PXEFMYB9')
 smu = Keithley2400(adapter.gpib(26))
+TEST_PARAM = {}
+
 
 def prompt_choice(prompt, choices):
     questions = [
@@ -64,7 +66,7 @@ def meas_esr(smu, test_curr, settle_time):
 
 # ********** Define Primary Test Functions **********
 
-def config_system(TEST_PARAM, smu, do_beeps, debug):
+def config_system(do_beeps, debug):
 
     smu.reset()
 
@@ -146,4 +148,123 @@ def config_system(TEST_PARAM, smu, do_beeps, debug):
     if choice == "CANCEL":
         raise Exception("config_system aborted by user")
 
-    return TEST_PARAM
+def config_test(do_beeps, debug):
+
+    max_allowed_current = None
+
+    if smu.voltage_range == 200:         # Volts
+        max_allowed_current = 0.105      # Amps
+    else:
+        max_allowed_current = 1.05       # Amps
+
+    if do_beeps:
+        smu.beep(2400, 0.08)
+
+    comment = input("Enter Comment (64 char max):")
+    if comment == "":
+        comment = "NO COMMENT"
+    TEST_PARAM["comment"] = comment
+
+    if do_beeps:
+	smu.beep(2400, 0.08)
+
+    discharge_type = prompt_choice("Select Discharge Type:", ["Constant Curr", "Current List"])
+
+    if debug:
+        print("\nIn config_test()...")
+        print("\nsmu.voltage_range = " + str(smu.voltage_range))
+        print("\nmax_allowed_current = " + str(max_allowed_current))
+        print("\ncomment = " + comment)
+        print("\ndischarge_type = " + discharge_type)
+
+    if discharge_type == "Constant Curr":
+        TEST_PARAM["discharge_type"] = "CONSTANT"
+        
+        dialog_text = "Discharge Curr (1E-6 to " + str(max_allowed_current) + "A)"
+        TEST_PARAM["discharge_curr"] = float(input(dialog_text))
+        if TEST_PARAM["discharge_curr"] < 1e-6 or TEST_PARAM["discharge_curr"] > max_allowed_current:
+            raise ValueError("Unallowed discharge current: " + str(TEST_PARAM["discharge_curr"]))
+
+        TEST_PARAM["discharge_curr_list"] = None   # If discharge_type is CONSTANT, then there is no current list
+        TEST_PARAM["max_discharge_current"] = TEST_PARAM["discharge_current"] # and discharge_current is the max_discharge_current
+
+        if debug:
+            print("\nTEST_PARAM[\"discharge_type\"] = " + TEST_PARAM["discharge_type"])
+            print("\nTEST_PARAM[\"discharge_current\"] = " + str(TEST_PARAM["discharge_current"]))
+            print("\nTEST_PARAM[\"discharge_curr_list\"] = " + str(TEST_PARAM["discharge_curr_list"]))
+            print("\nTEST_PARAM[\"max_discharge_current\"] = " + str(TEST_PARAM["max_discharge_current"]))
+
+    else:  # If Current List selected
+
+        TEST_PARAM["discharge_type"] = "LIST"
+        TEST_PARAM["discharge_curr_list"] = []   # Create array to hold current list values
+        TEST_PARAM["discharge_current"] = None	 # If discharge_type is LIST, then there is no constant discharge_current
+
+        npoints = int(input("Number of Pts in List (2 to 10)"))
+        if npoints < 2 or npoints > 10:
+            raise ValueError("Unallowed number of points: " + str(npoints))
+
+        if debug:
+            print("\nTEST_PARAM[\"discharge_type\"] = " + TEST_PARAM["discharge_type"])
+	    print("\nTEST_PARAM[\"discharge_current\"] = " + str(TEST_PARAM["discharge_current"]))
+	    print("\nTEST_PARAM[\"discharge_curr_list\"] = " + str(TEST_PARAM["discharge_curr_list"]))
+            print("\nnpoints = " + str(npoints))
+
+        average_curr = 0
+        list_duration = 0
+
+        for i in range(0,npoints):
+
+            TEST_PARAM["discharge_curr_list"][i] = {} # Create dictionary to hold current level and duration for list point i
+
+            dialog_text = "Dischrg Curr #" + str(i+1) + " (1E-6 to " + str(max_allowed_current) + "A)"
+            TEST_PARAM["discharge_curr_list"][i]["current"] = float(input(dialog_text))
+            if TEST_PARAM["discharge_curr_list"][i]["current"] < 1e-6 or TEST_PARAM["discharge_curr_list"][i]["current"] > max_allowed_current:
+                raise ValueError("Unallowed discharge current: " + str(TEST_PARAM["discharge_curr_list"][i]["current"]))
+
+            TEST_PARAM["discharge_curr_list"][i]["duration"] = float(input("Curr #" + str(i+1) + " Duration (s, 500us min)"))
+            if TEST_PARAM["discharge_curr_list"][i]["duration"] < 0.0005:
+                raise ValueError("Unallowed discharge duration: " + str(TEST_PARAM["discharge_curr_list"][i]["duration"]))
+
+            average_curr = average_curr + TEST_PARAM["discharge_curr_list"][i]["current"] * TEST_PARAM["discharge_curr_list"][i]["duration"]
+            list_duration = list_duration + TEST_PARAM["discharge_curr_list"][i]["duration"]
+
+            if debug:
+                print("\nTEST_PARAM[\"discharge_curr_list\"][" + str(i) + "]["current"] = " + TEST_PARAM["discharge_curr_list"][i]["current"])
+                print("\nTEST_PARAM[\"discharge_curr_list\"][" + str(i) + "]["duration"] = " + TEST_PARAM["discharge_curr_list"][i]["duration"])
+
+        average_curr = average_curr / list_duration
+        TEST_PARAM["discharge_curr_list_average_curr"] = average_curr
+        TEST_PARAM["discharge_curr_list_duration"] = list_duration
+
+        max_specified_current = TEST_PARAM["discharge_curr_list"][0]["current"]
+        for i in range(1,npoints):
+            if TEST_PARAM["discharge_curr_list"][i]["current"] > max_specified_current:
+                max_specified_current = TEST_PARAM["discharge_curr_list"][i]["current"]
+        TEST_PARAM["max_discharge_current"] = max_specified_current
+
+        
+        maxdur = TEST_PARAM["discharge_curr_list"][0]["duration"]
+        for i in range(1,npoints):
+            if TEST_PARAM["discharge_curr_list"][i]["duration"] > maxdur:
+                maxdur = TEST_PARAM["discharge_curr_list"][i]["duration"]
+	
+        # Create array of list points with duration equal to maxdur
+        maxdur_indices = []
+        for i in range(0, npoints):
+            if TEST_PARAM["discharge_curr_list"][i]["duration"] == maxdur:
+                maxdur_indices.append(i)
+
+        # Determine the primary step in the sweep where ESR will be measured
+        max_dur_index = None
+        if len(maxdur_indices) == 1:
+            max_dur_index = maxdur_indices[0]
+        else:
+            maxcurr = TEST_PARAM["discharge_curr_list"][maxdur_indices[0]]["current"]
+            for i in range(1,len(maxdur_indices)):
+                if TEST_PARAM["discharge_curr_list"][maxdur_indices[i]]["current"] > maxcurr:
+                    maxcurr = TEST_PARAM["discharge_curr_list"][maxdur_indices[i]]["current"]
+                    max_dur_index = maxdur_indices[i]
+
+        TEST_PARAM["discharge_curr_list_max_dur_index"] = max_dur_index
+        
