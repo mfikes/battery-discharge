@@ -397,13 +397,13 @@ def do_constant_curr_discharge(debug):
         while (time.time() - tstart_meas_intrvl) < (meas_intrvl - azero_duration):
             delay(loop_delay)
 
-        smu.source_current = 0
-        smu.source_enabled = False
+    smu.source_current = 0
+    smu.source_enabled = False
 
-        TEST_PARAM["discharge_stop_time"] = str(datetime.now())
+    TEST_PARAM["discharge_stop_time"] = str(datetime.now())
 
-        BATT_MODEL_RAW["capacity"] = TEST_PARAM["discharge_current"] * tstamp_tbl[counter] / 3600
+    BATT_MODEL_RAW["capacity"] = TEST_PARAM["discharge_current"] * tstamp_tbl[counter] / 3600
 
-        if debug:
-            print("\nTEST_PARAM[\"discharge_stop_time\"] = "+ TEST_PARAM["discharge_stop_time"])
-            print("\nBATT_MODEL_RAW[\"capacity\"] = " + str(BATT_MODEL_RAW["capacity"]))
+    if debug:
+        print("\nTEST_PARAM[\"discharge_stop_time\"] = "+ TEST_PARAM["discharge_stop_time"])
+        print("\nBATT_MODEL_RAW[\"capacity\"] = " + str(BATT_MODEL_RAW["capacity"]))
