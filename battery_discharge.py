@@ -75,7 +75,7 @@ def config_system(TEST_PARAM, smu, do_beeps, debug):
 
     # Cofigure terminals
     if do_beeps:
-        smu.beep(2400,0.08)
+        smu.beep(2400, 0.08)
 
     terminals = prompt_choice("Select TERMINALS you want to use:", ["Front", "Rear"])
 
@@ -97,5 +97,54 @@ def config_system(TEST_PARAM, smu, do_beeps, debug):
     smu.source_delay = 0.0             # Seconds; automatically disables source autodelay
 
     # Configure measure setting
-    smu.measure_voltage(1,210,auto_range=False) # TODO this fails
+    smu.measure_voltage()
+
     smu.wires = 4
+
+    smu.compliance_voltage = 210       # Volts
+    smu.voltage_range = 200            # Volts
+
+    smu.auto_range_source()
+    smu.voltage_nplc = 1
+
+    dialog_text = "Make 4-wire connections to your battery at the SMU " + terminals + " and then press OK."
+    if do_beeps:
+        smu.beep(2400, 0.08)
+    
+    prompt_choice(dialog_text, ["OK"])
+
+    smu.source_enabled = True
+
+    scrap_reading = smu.voltage   # Measure voltage to set range
+
+    if debug:
+        print("\nIn ConfigSystem()...")
+        print("\nterminals = "+ terminals)
+        print("\nsmu.voltage_range (before ranging) = " + str(smu.voltage_range))
+        print("\nsmu.compliance_voltage = " + str(smu.compliance_voltage))
+        print("\nscrap_reading = " + str(scrap_reading))
+
+    smu.voltage_range = scrap_reading   # Automatically disables measure autoranging
+    smu.compliance_voltage = 1.05 * smu.voltage_range   # When forcing current, the source voltage limit MUST ALWAYS be kept greater than the DUT voltage
+                                                        # Both real and range compliance should be avoided
+
+    TEST_PARAM["initial_voc"] = smu.voltage      # Capture an initial voltage measurement for system check
+
+    smu.source_enabled = False
+
+    if debug:
+        print("\nsmu.voltage_range (after raning) = " + str(smu.voltage_range))
+        print("\nsmu.compliance_voltage = " + str(smu.compliance_voltage))
+        print("\nTEST_PARAM[\"initial_voc\"] = " + str(TEST_PARAM["initial_voc"]))
+
+    if TEST_PARAM["initial_voc"] <= 0:
+        raise "Negative or zero Initial Voc detected; ConfigSystem aborted"
+
+    dialog_text = "Measured battery voltage = " + string.format("%.3f",TEST_PARAM["initial_voc"]) + "V.\nPress OK to continue or Cancel to quit."
+    if do_beeps:
+        smu.beep(2400, 0.08)
+    choice = prompt_choice(dialog_text, ["OK", "CANCEL"])
+    if choice == "CANCEL":
+        raise "ConfigSystem aborted by user"
+
+    return TEST_PARAM
