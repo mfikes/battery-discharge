@@ -90,10 +90,6 @@ def config_system(do_beeps, debug):
 
     smu.reset()
 
-    # display.changescreen(display.SCREEN_HOME)
-
-    # eventlog.clear()
-
     # Cofigure terminals
     if do_beeps:
         smu.beep(2400, 0.08)
@@ -111,8 +107,6 @@ def config_system(do_beeps, debug):
     smu.source_mode = "current"
     smu.output_off_state = 'HIMP'      # SMU is disconnected from output terminals when SMU output is OFF
 
-    # TODO disable source readback
-    # Original TSP smu.source.readback = smu.OFF
     smu.source_current = 0.0           # Amps; zero is default value
     smu.source_current_range = 0.001   # Amps; automatically disables source autorange.
     smu.source_delay = 0.0             # Seconds; automatically disables source autodelay
@@ -198,6 +192,7 @@ def config_test(do_beeps, debug):
         print("\ndischarge_type = " + discharge_type)
 
     if discharge_type == "Constant Curr":
+        
         TEST_PARAM["discharge_type"] = "CONSTANT"
         
         dialog_text = "Discharge Curr (1E-6 to " + str(max_allowed_current) + "A)"
@@ -344,10 +339,6 @@ def do_constant_curr_discharge(debug):
     counter = 0
     quit = False
 
-    # Set up display
-    # display.clear()
-    # display.changescreen(display.SCREEN_USER_SWIPE)
-
     # Initialize SMU output
     smu.source_current_range = TEST_PARAM["max_discharge_current"]  # Use fixed source range
     smu.source_current = -1*TEST_PARAM["discharge_current"]   # Negative current because drawing current from battery
@@ -387,10 +378,6 @@ def do_constant_curr_discharge(debug):
         if debug:
             print(counter, tstamp_tbl[counter], voc_tbl[counter], vload_tbl[counter], esr_tbl[counter])
 
-        # display.settext(display.TEXT1, "Total time="..Dround(timer.gettime(),0).." s")
-
-        # dialog_text = "Voc="..string.format("%0.2f", voc_tbl[counter]).." Vload="..string.format("%0.2f", vload_tbl[counter]).." ESR="..string.format("%0.4f", esr_tbl[counter])
-	# display.settext(display.TEXT2, dialog_text)
 
         if vload_tbl[counter] <= TEST_PARAM["vcutoff"]:
             quit = True
@@ -412,8 +399,47 @@ def do_constant_curr_discharge(debug):
         print("\nTEST_PARAM[\"discharge_stop_time\"] = "+ TEST_PARAM["discharge_stop_time"])
         print("\nBATT_MODEL_RAW[\"capacity\"] = " + str(BATT_MODEL_RAW["capacity"]))
 
-def do_curr_list_discharge(debug):
-    raise Exception("not yet implemented")
+def do_curr_list_discharge(settle_delay,debug):
+
+    # Create local aliases for global tables
+    voc_tbl = BATT_MODEL_RAW["voc"]
+    vload_tbl = BATT_MODEL_RAW["vload"]
+    esr_tbl = BATT_MODEL_RAW["esr"]
+    tstamp_tbl = BATT_MODEL_RAW["tstamp"]
+    curr_list_tbl = TEST_PARAM["discharge_curr_list"]
+
+     # Declare other local variables
+    dialog_text = None
+
+    azero_overhead = 0.00133 # Execution overhead associated with autozero; appears to vary slightly with NPLC value.
+                             # Includes execution overhead for timer.cleartime() y=timer.gettime(), which is approx 10us.
+                             # Values determined using 2461 with Rev 1.6.1a FW
+
+    linefreq = float(smu.ask(":SYST:LFR?"))
+    azero_duration = 2 * smu.voltage_nplc / linefreq + azero_overhead  # Approximate execution time of autozero
+
+    npoints = len(curr_list_tbl)
+    max_dur_index = TEST_PARAM["curr_list_tbl_max_dur_index"]
+
+    meas_intrvl = TEST_PARAM["measure_interval"]
+    loop_delay2 = None
+    tstart_step = None
+    tmeas = None
+
+    do_measure = None
+    counter = None
+    quit = False
+
+    if debug:
+        print("\nIn do_curr_list_discharge\n")
+        print("\nsettle_delay = " + str(settle_delay))
+        print("\nazero_overhead = " + str(azero_overhead))
+        print("azero_duration = " + str(azero_duration))
+        print("\nnpoints = " + str(npoints)) 
+        print("max_dur_index = " + str(max_dur_index))
+        print("\nmeas_intrvl = "+ str(meas_intrvl))
+
+    raise Exception("do_curr_list_discharge not yet implemented")
 
 def extract_model(debug):
 
@@ -616,7 +642,9 @@ def run_test(do_beeps, debug):
         if debug:
             print("\nCall do_curr_list_discharge()...")
 
-	#do_curr_list_discharge(debug)
+        # do_curr_list_discharge(settle_delay, debug); need to empirically determine an appropriate settling delay
+        #   Start with 50us, which is the practical minimum you can use with the delay() function
+        do_curr_list_discharge(50e-6, debug)
 
     if debug:
         print("\nCall extract_model()...")
