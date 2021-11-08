@@ -453,6 +453,9 @@ def extract_model(debug):
 
         while (tstamp_tbl[i] - tstamp_tbl[0]) < target_time:
             i = i + 1
+            if i > max_index:
+                i = max_index
+                break
             
         if (tstamp_tbl[i] - tstamp_tbl[0]) > target_time:
             
@@ -501,7 +504,31 @@ def extract_model(debug):
         if do_beeps:
             smu.beep(2400, 0.08)
         prompt_choice(dialog_text, ["OK"])
-            
+
+def save_model(debug):
+    filename = input("Enter file name: ")
+    if filename == "":
+        filename = "unnamed"
+        print("No name given, using \"unnamed\"")
+
+    filename = filename + ".csv"
+
+    file = open(filename, "w")
+
+    file.write("PW_MODEL_PW2281S_20_6 \n");
+
+    file.write("Capacity=" + str(BATT_MODEL["capacity"]) + "AH\n")
+    file.write("SOC(%), Open Voltage(V), ESR(ohm)\n")
+
+    for i in range(0,101):
+        file.write(str(BATT_MODEL["soc"][i]) + ", " + str(BATT_MODEL["voc"][i]) + ", " + str(BATT_MODEL["esr"][i]) + " \n")
+    file.close()
+
+    TEST_PARAM["batt_model_filename"] = filename
+
+def save_setup_and_raw_ata(debug):
+    return 0
+
 def run_test(do_beeps, debug):
 
     if debug:
@@ -545,7 +572,12 @@ def run_test(do_beeps, debug):
     if debug:
         print("\nCall save_model()...")
 
-    #save_model(debug)
+    save_model(debug)
+
+    if debug:
+        print("\nCall save_setup_and_raw_data()...")
+
+    save_setup_and_raw_data(debug)
 
 debug = True
 do_beeps = True
@@ -557,6 +589,6 @@ selection = prompt_choice(dialog_text, ["OK", "Cancel"])
 if selection == "Cancel":
     raise Exception("run_test aborted by user")
 
-#run_test(do_beeps, debug)
+run_test(do_beeps, debug)
 
 smu.beep(2400, 0.08)
