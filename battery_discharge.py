@@ -40,18 +40,18 @@ smu = Keithley2400(adapter.gpib(26))
 
 TEST_PARAM = {}   # Global table to hold various test parameters and share them among different functions
 
-BATT_MODEL_RAW = {}	         # Global table to hold "raw" measured and calculated data for battery model
-BATT_MODEL_RAW["voc"] = {}       # Global table to hold all measured open-circuit voltage values
-BATT_MODEL_RAW["vload"] = {}     # Global table to hold all voltage values measured at load (i.e. discharge) current
-BATT_MODEL_RAW["esr"] = {}       # Global table to hold all measured/calculated internal resistance values
-BATT_MODEL_RAW["tstamp"] = {}    # Global table to hold all timestamp values
+BATT_MODEL_RAW = {}	             # Global table to hold "raw" measured and calculated data for battery model
+BATT_MODEL_RAW["voc"] = []           # Global table to hold all measured open-circuit voltage values
+BATT_MODEL_RAW["vload"] = []         # Global table to hold all voltage values measured at load (i.e. discharge) current
+BATT_MODEL_RAW["esr"] = []           # Global table to hold all measured/calculated internal resistance values
+BATT_MODEL_RAW["tstamp"] = []        # Global table to hold all timestamp values
 
-BATT_MODEL = {}	                 # Global table to hold final model values extracted from BATT_MODEL_RAW
-BATT_MODEL["voc"] = {}           # Global table to hold final open-circuit voltage values extracted from BATT_MODEL_RAW.voc
-BATT_MODEL["vload"] = {}         # Global table to hold final voltage-at-load values extracted from BATT_MODEL_RAW.vload
-BATT_MODEL["esr"] = {}           # Global table to hold final internal resistance values extracted from BATT_MODEL_RAW.esr
-BATT_MODEL["tstamp"] = {}        # Global table to hold final timestamp values extracted from BATT_MODEL_RAW.tstamp
-BATT_MODEL["soc"] = {}           # Global table to hold state-of-charge values (0 to 100%, in 1% increments)
+BATT_MODEL = {}	                     # Global table to hold final model values extracted from BATT_MODEL_RAW
+BATT_MODEL["voc"] = [None] * 101     # Global table to hold final open-circuit voltage values extracted from BATT_MODEL_RAW["voc"]
+BATT_MODEL["vload"] = [None] * 101   # Global table to hold final voltage-at-load values extracted from BATT_MODEL_RAW["vload"]
+BATT_MODEL["esr"] = [None] * 101     # Global table to hold final internal resistance values extracted from BATT_MODEL_RAW["esr"]
+BATT_MODEL["tstamp"] = [None] * 101  # Global table to hold final timestamp values extracted from BATT_MODEL_RAW["tstamp"]
+BATT_MODEL["soc"] = [None] * 101     # Global table to hold state-of-charge values (0 to 100%, in 1% increments)
 
 # ********** Define Utility Functions **********
 
@@ -319,7 +319,6 @@ def config_test(do_beeps, debug):
     if debug:
         print("\nTEST_PARAM[\"measure_interval\"] = " + str(TEST_PARAM["measure_interval"]))
 
-        
 def do_constant_curr_discharge(debug):
 
     # Create local aliases for global tables
@@ -371,12 +370,15 @@ def do_constant_curr_discharge(debug):
 
     while (quit == False):
 
-        counter = counter + 1
-
         # Bug in PyMeasure... should be able to do smu.auto_zero = "ONCE"
         smu.auto_zero = True
 
         tstart_meas_intrvl = round(time.time() - t0, 3)
+
+        vload_tbl.append(None)
+        voc_tbl.append(None)
+        esr_tbl.append(None)
+        tstamp_tbl.append(None)
         
         vload_tbl[counter], voc_tbl[counter], esr_tbl[counter] = meas_esr(0, 0.01)  # Proper settle_time is still TBD
 
@@ -397,6 +399,8 @@ def do_constant_curr_discharge(debug):
         while (round(time.time() - t0, 3) - tstart_meas_intrvl) < (meas_intrvl - azero_duration):
             delay(loop_delay)
 
+        counter = counter + 1
+
     smu.source_current = 0
     smu.source_enabled = False
 
@@ -408,7 +412,95 @@ def do_constant_curr_discharge(debug):
         print("\nTEST_PARAM[\"discharge_stop_time\"] = "+ TEST_PARAM["discharge_stop_time"])
         print("\nBATT_MODEL_RAW[\"capacity\"] = " + str(BATT_MODEL_RAW["capacity"]))
 
+def do_curr_list_discharge(debug):
+    raise Exception("not yet implemented")
 
+def extract_model(debug):
+
+    # Create local aliases for global tables
+    voc_tbl = BATT_MODEL_RAW["voc"]
+    vload_tbl = BATT_MODEL_RAW["vload"]
+    esr_tbl = BATT_MODEL_RAW["esr"]
+    tstamp_tbl = BATT_MODEL_RAW["tstamp"]
+
+    # Declare other local variables
+    max_index = len(tstamp_tbl) - 1
+
+    model_interval = tstamp_tbl[max_index] / 100
+
+    BATT_MODEL["soc"][100] = 100     # 100 % state of charge
+    BATT_MODEL["voc"][100] = voc_tbl[0]
+    BATT_MODEL["vload"][100] = vload_tbl[0]
+    BATT_MODEL["esr"][100] = esr_tbl[0]
+    BATT_MODEL["tstamp"][100] = tstamp_tbl[0] - tstamp_tbl[0]  # Calculate model timestamps relative to timestamp of first raw timestamp
+
+    if debug:
+        print("\nIn extract_model()...")
+        print("\nsoc_index, soc, target_time, i, tstamp, voc, vload, esr")
+        print(100, BATT_MODEL["soc"][100], 0, 1, BATT_MODEL["tstamp"][100], BATT_MODEL["voc"][100], BATT_MODEL["vload"][100], BATT_MODEL["esr"][100])
+
+    start_index = 1
+    soc_index = None
+    target_time = None
+    i = None
+
+    for soc in range(99, 0, -1):     # 99% to 1% state_of_charge
+        
+        soc_index = soc
+        BATT_MODEL["soc"][soc_index] = soc	
+        target_time = (100 - soc) * model_interval
+        i = start_index
+
+        while (tstamp_tbl[i] - tstamp_tbl[0]) < target_time:
+            i = i + 1      # Need to make sure this does not exceed max_index
+
+            if (tstamp_tbl[i] - tstamp_tbl[0]) > target_time:
+            
+                if ((tstamp_tbl[i] - tstamp_tbl[0]) - target_time) < (target_time - (tstamp_tbl[i-1] - tstamp_tbl[0])):
+                
+                    BATT_MODEL["voc"][soc_index] = voc_tbl[i]
+                    BATT_MODEL["vload"][soc_index] = vload_tbl[i]
+                    BATT_MODEL["esr"][soc_index] = esr_tbl[i]
+                    BATT_MODEL["tstamp"][soc_index] = tstamp_tbl[i] - tstamp_tbl[0]    # Calculate model timestamps relative to timestamp of first raw timestamp
+                    start_index = i
+
+                else:
+
+                    BATT_MODEL["voc"][soc_index] = voc_tbl[i-1]
+		    BATT_MODEL["vload"][soc_index] = vload_tbl[i-1]
+		    BATT_MODEL["esr"][soc_index] = esr_tbl[i-1]
+		    BATT_MODEL["tstamp"][soc_index] = tstamp_tbl[i-1] - tstamp_tbl[0]  # Calculate model timestamps relative to timestamp of first raw timestamp
+                    start_index = i - 1
+
+            else:   # if (tstamp_tbl[i] - tstamp_tbl[0]) == target_time
+
+                BATT_MODEL["voc"][soc_index] = voc_tbl[i]
+	        BATT_MODEL["vload"][soc_index] = vload_tbl[i]
+	        BATT_MODEL["esr"][soc_index] = esr_tbl[i]
+	        BATT_MODEL["tstamp"][soc_index] = tstamp_tbl[i] - tstamp_tbl[0]	   # Calculate model timestamps relative to timestamp of first raw timestamp
+                start_index = i
+
+            if debug:
+                print(soc_index, BATT_MODEL["soc"][soc_index], target_time, i, BATT_MODEL["tstamp"][soc_index], BATT_MODEL["voc"][soc_index], BATT_MODEL["vload"][soc_index], BATT_MODEL["esr"][soc_index])
+            
+        BATT_MODEL["soc"][0] = 0	# 0% state-of-charge
+        BATT_MODEL["voc"][0] = voc_tbl[max_index]
+        BATT_MODEL["vload"][0] = vload_tbl[max_index]
+        BATT_MODEL["esr"][0] = esr_tbl[max_index]
+        BATT_MODEL["tstamp"][0] = tstamp_tbl[max_index] - tstamp_tbl[0]	# Calculate model timestamps relative to timestamp of first raw timestamp
+
+        BATT_MODEL["capacity"] = Dround(BATT_MODEL_RAW["capacity"], 4)
+
+        if debug:
+            print(0, BATT_MODEL["soc"][0], 100*model_interval, max_index, BATT_MODEL["tstamp"][0], BATT_MODEL["voc"][0], BATT_MODEL["vload"][0], BATT_MODEL["esr"][0])
+            print("\nBATT_MODEL[\"capacity\"] = " + str(BATT_MODEL["capacity"]))
+
+        if len(tstamp_tbl) < 101:
+            dialog_text = "Fewer than 101 measurements were made.  As a result, your battery model will have some duplicate values.  Press OK to continue."
+            if do_beeps:
+                smu.beep(2400, 0.08)
+            prompt_choice(dialog_text, ["OK"])
+            
 def run_test(do_beeps, debug):
 
     if debug:
@@ -447,7 +539,7 @@ def run_test(do_beeps, debug):
     if debug:
         print("\nCall extract_model()...")
 
-    #extract_model(debug)
+    extract_model(debug)
 
     if debug:
         print("\nCall save_model()...")
