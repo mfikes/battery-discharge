@@ -30,9 +30,9 @@ from datetime import datetime
 import time
 import inquirer
 
-def delay(interval):
-    time.sleep(interval)
+# ********** Instrument communication **********
 
+# Revise these for your GPIB / Serial Setup
 adapter = PrologixAdapter('/dev/cu.usbserial-PXEFMYB9')
 smu = Keithley2400(adapter.gpib(26))
 
@@ -54,6 +54,9 @@ BATT_MODEL["tstamp"] = [None] * 101  # Global table to hold final timestamp valu
 BATT_MODEL["soc"] = [None] * 101     # Global table to hold state-of-charge values (0 to 100%, in 1% increments)
 
 # ********** Define Utility Functions **********
+
+def delay(interval):
+    time.sleep(interval)
 
 def prompt_choice(prompt, choices):
     questions = [
@@ -122,11 +125,11 @@ def config_system(do_beeps, debug):
     smu.auto_range_source()
     smu.voltage_nplc = 1
 
-    dialog_text = "Make 4-wire connections to your battery at the SMU " + terminals + " terminals and then press OK."
+    print("Make 4-wire connections to your battery at the SMU " + terminals + " terminals\nand choose OK.")
     if do_beeps:
         smu.beep(2400, 0.08)
-    
-    prompt_choice(dialog_text, ["OK"])
+
+    prompt_choice("Proceed?", ["OK"])
 
     smu.source_enabled = True
 
@@ -155,11 +158,11 @@ def config_system(do_beeps, debug):
     if TEST_PARAM["initial_voc"] <= 0:
         raise ValueError("Negative or zero Initial Voc detected; config_system aborted")
 
-    dialog_text = "Measured battery voltage = " + "{0:.3f}".format(TEST_PARAM["initial_voc"]) + "V.\nPress OK to continue or Cancel to quit."
+    print("Measured battery voltage = " + "{0:.3f}".format(TEST_PARAM["initial_voc"]) + "V.\nChoose OK to continue or Cancel to quit.")
     if do_beeps:
         smu.beep(2400, 0.08)
-    choice = prompt_choice(dialog_text, ["OK", "CANCEL"])
-    if choice == "CANCEL":
+    choice = prompt_choice("Proceed?", ["OK", "Cancel"])
+    if choice == "Cancel":
         raise Exception("config_system aborted by user")
 
 def config_test(do_beeps, debug):
@@ -174,7 +177,7 @@ def config_test(do_beeps, debug):
     if do_beeps:
         smu.beep(2400, 0.08)
 
-    comment = input("Enter Comment (64 char max):")
+    comment = input("Enter Comment (64 char max): ")
     if comment == "":
         comment = "NO COMMENT"
     TEST_PARAM["comment"] = comment
@@ -195,7 +198,7 @@ def config_test(do_beeps, debug):
         
         TEST_PARAM["discharge_type"] = "CONSTANT"
         
-        dialog_text = "Discharge Curr (1E-6 to " + str(max_allowed_current) + "A)"
+        dialog_text = "Discharge Curr (1E-6 to " + str(max_allowed_current) + "A): "
         TEST_PARAM["discharge_current"] = float(input(dialog_text))
         if TEST_PARAM["discharge_current"] < 1e-6 or TEST_PARAM["discharge_current"] > max_allowed_current:
             raise ValueError("Unallowed discharge current: " + str(TEST_PARAM["discharge_current"]))
@@ -214,7 +217,7 @@ def config_test(do_beeps, debug):
         TEST_PARAM["discharge_type"] = "LIST"
         TEST_PARAM["discharge_current"] = None	 # If discharge_type is LIST, then there is no constant discharge_current
 
-        npoints = int(input("Number of Pts in List (2 to 10)"))
+        npoints = int(input("Number of Pts in List (2 to 10): "))
         if npoints < 2 or npoints > 10:
             raise ValueError("Unallowed number of points: " + str(npoints))
 
@@ -233,12 +236,12 @@ def config_test(do_beeps, debug):
 
             TEST_PARAM["discharge_curr_list"][i] = {} # Create dictionary to hold current level and duration for list point i
 
-            dialog_text = "Dischrg Curr #" + str(i+1) + " (1E-6 to " + str(max_allowed_current) + "A)"
+            dialog_text = "Dischrg Curr #" + str(i+1) + " (1E-6 to " + str(max_allowed_current) + "A): "
             TEST_PARAM["discharge_curr_list"][i]["current"] = float(input(dialog_text))
             if TEST_PARAM["discharge_curr_list"][i]["current"] < 1e-6 or TEST_PARAM["discharge_curr_list"][i]["current"] > max_allowed_current:
                 raise ValueError("Unallowed discharge current: " + str(TEST_PARAM["discharge_curr_list"][i]["current"]))
 
-            TEST_PARAM["discharge_curr_list"][i]["duration"] = float(input("Curr #" + str(i+1) + " Duration (s, 500us min)"))
+            TEST_PARAM["discharge_curr_list"][i]["duration"] = float(input("Curr #" + str(i+1) + " Duration (s, 500us min): "))
             if TEST_PARAM["discharge_curr_list"][i]["duration"] < 0.0005:
                 raise ValueError("Unallowed discharge duration: " + str(TEST_PARAM["discharge_curr_list"][i]["duration"]))
 
@@ -297,7 +300,7 @@ def config_test(do_beeps, debug):
     # Set default cut-off voltage to 50% of TEST_PARAM["initial_voltage"].
     cov_default = Dround(0.5 * TEST_PARAM["initial_voc"], 2)
 
-    dialog_text = "Cut-off Voltage (0.1 to " + str(cov_max) + "V)" # 100mV is arbitrary minimum
+    dialog_text = "Cut-off Voltage (0.1 to " + str(cov_max) + "V): " # 100mV is arbitrary minimum
     TEST_PARAM["vcutoff"] = float(input(dialog_text))
     if TEST_PARAM["vcutoff"] < 0.1 or TEST_PARAM["vcutoff"] > cov_max:
         raise ValueError("Unallowed cutoff voltage: " + str(TEST_PARAM["vcutoff"]))
@@ -307,7 +310,7 @@ def config_test(do_beeps, debug):
         print("\ncov_default = "+ str(cov_default))
         print("TEST_PARAM[\"vcutoff\"] = "+ str(TEST_PARAM["vcutoff"]))
 
-    TEST_PARAM["measure_interval"] = float(input("ESR Meas Interval (0.08 to 600s)"))
+    TEST_PARAM["measure_interval"] = float(input("ESR Meas Interval (0.08 to 600s): "))
     if TEST_PARAM["measure_interval"] < 0.08 or TEST_PARAM["measure_interval"] > 600:
         raise ValueError("Unalllowed measure interval: " + str(TEST_PARAM["measure_interval"]))
 
@@ -526,12 +529,14 @@ def extract_model(debug):
         print("\nBATT_MODEL[\"capacity\"] = " + str(BATT_MODEL["capacity"]))
 
     if len(tstamp_tbl) < 101:
-        dialog_text = "Fewer than 101 measurements were made.  As a result, your battery model will have some duplicate values.  Press OK to continue."
+        print("Fewer than 101 measurements were made.  As a result, your\nbattery model will have some duplicate values.")
         if do_beeps:
             smu.beep(2400, 0.08)
-        prompt_choice(dialog_text, ["OK"])
+        prompt_choice("Proceed?", ["OK"])
 
 def save_model(debug):
+    print("Saving Battery Discharge Model\n")
+    
     filename = input("Enter file name: ")
     if filename == "":
         filename = "unnamed"
@@ -621,6 +626,7 @@ def run_test(do_beeps, debug):
 
     config_test(do_beeps, debug)
 
+    print("\n")
     dialog_text = "Select OK to START TEST, or Cancel to ABORT and EXIT."
 
     if do_beeps:
@@ -661,9 +667,10 @@ def run_test(do_beeps, debug):
 
     save_setup_and_raw_data(debug)
 
-debug = True
+debug = False
 do_beeps = True
-    
+
+print("\nBattery Discharge Driver for Keithley 2400 SourceMeter\n")
 print("Follow all manufacturer's guidelines to ensure safe operation when\ndischarging a battery (especially a LITHIUM ION battery)!")
 
 selection = prompt_choice("Proceed?", ["OK", "Cancel"])
