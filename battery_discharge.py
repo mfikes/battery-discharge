@@ -664,9 +664,9 @@ def run_test(do_beeps, debug):
 debug = True
 do_beeps = True
     
-dialog_text = "Follow all manufacturer's guidelines to ensure safe operation when discharging a battery (especially a LITHIUM ION battery)!"
+print("Follow all manufacturer's guidelines to ensure safe operation when\ndischarging a battery (especially a LITHIUM ION battery)!")
 
-selection = prompt_choice(dialog_text, ["OK", "Cancel"])
+selection = prompt_choice("Proceed?", ["OK", "Cancel"])
 
 if selection == "Cancel":
     raise Exception("run_test aborted by user")
