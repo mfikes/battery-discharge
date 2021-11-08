@@ -526,8 +526,62 @@ def save_model(debug):
 
     TEST_PARAM["batt_model_filename"] = filename
 
-def save_setup_and_raw_ata(debug):
-    return 0
+def save_setup_and_raw_data(debug):
+
+    if debug:
+        print("\nIn save_setup_and_raw_data()")
+
+    choice = prompt_choices("Do you want to save setup info and raw data?" ["YES", "NO"])
+    if choice == "NO":
+        return
+
+    filenam = TEST_PARAM["batt_model_filename"][:-4] + "_SetupAndRawData.csv"
+                                                                            
+    file = open(filename, "w")
+
+    filw.write("TEST_PARAM.comment:," + TEST_PARAM["comment"] +"\n")
+    file.write("\n")
+
+
+    smu_id_info = smu.id.split(",")
+    file.write("SourceMeter Model:," + smu_id_info[1] +"\n")
+    file.write("SourceMeter S/N:," + smu_id_info[2] + "\n")
+    file.write("SourceMeter Firmware:," + smu_id_info[3] + "\n")
+    file.write("\n")
+    file.write("TEST_PARAM.terminals:," + TEST_PARAM["terminals"] + "\n")
+    file.write("\n")
+    file.write("TEST_PARAM.initial_voc:," + TEST_PARAM["initial_voc"] + "\n")
+    file.write("TEST_PARAM.vcutoff:," + TEST_PARAM["vcutoff"] + "\n")
+    file.write("\n")
+    file.write("TEST_PARAM.discharge_type:," + TEST_PARAM["discharge_type"] + "\n")
+    if TEST_PARAM["discharge_current"] is not None:
+        file.write("TEST_PARAM.discharge_current:," + str(TEST_PARAM["discharge_current"]) + "\n")
+        file.write("TEST_PARAM.max_discharge_current:," + str(TEST_PARAM["max_discharge_current"]) + "\n")
+    if TEST_PARAM["discharge_curr_list"] is not None:
+        file.write("TEST_PARAM.discharge_curr_list:,Index,Current (A),Duration (s)\n")
+        for i in range(0,len(TEST_PARAM["discharge_curr_list"])):
+            file.write(","+ str(i+1) + "," + str(TEST_PARAM["discharge_curr_list"][i]["current"]) + "," + str(TEST_PARAM["discharge_curr_list"][i]["duration"])+"\n")
+        file.write("TEST_PARAM.discharge_curr_list.average_curr:,," + str(TEST_PARAM["discharge_curr_list_average_curr"]) + "\n")
+        file.write("TEST_PARAM.discharge_curr_list.duration:,,," + str(TEST_PARAM["discharge_curr_list_duration"]) + "\n")
+        file.write("TEST_PARAM.discharge_curr_list.max_dur_index:," + str(TEST_PARAM["discharge_curr_list_max_dur_index"]) + "\n")
+        file.write("TEST_PARAM.discharge_curr_list.max_discharge_current:," + str(TEST_PARAM["discharge_curr_list_max_discharge_current"]) + "\n")
+    file.write("\n")
+    file.write("TEST_PARAM.measure_interval:," + str(TEST_PARAM["measure_interval"]))
+    file.write("\n")
+    file.write("TEST_PARAM.discharge_start_time:," + TEST_PARAM["discharge_start_time"])
+    file.write("TEST_PARAM.discharge_stop_time:," + TEST_PARAM["discharge_stop_time"])
+    file.write("\n")
+    file.write("BATT_MODEL_RAW:,Index,Timestamp,Voc,Vload,ESR\n")
+    for in in range(0,len(BATT_MODEL_RAW["tstamp"])):
+        file.write("BATT_MODEL_RAW:,"+str(i+1)+","+ str(BATT_MODEL_RAW["tstamp"][i]) + "," + str(BATT_MODEL_RAW["voc"][i]) + "," + str(BATT_MODEL_RAW["vload"][i]) + "," + str(BATT_MODEL_RAW["esr"][i]) +"\n")
+    file.write("BATT_MODEL_RAW.capacity:," + str(BATT_MODEL_RAW["capacity"]) +"\n")
+    file.write("\n")
+    file.write("BATT_MODEL:,Index,Timestamp,Voc,Vload,ESR\n")
+    for i in range(0, len(BATT_MODEL["tstamp"])):
+        file.write("BATT_MODEL:," + str(i+1) + "," + str(BATT_MODEL["tstamp"][i]) + "," + str(BATT_MODEL["voc"][i]) + "," + str(BATT_MODEL["vload"][i]) + "," + str(BATT_MODEL["esr"][i]) + "\n")
+    file.write("BATT_MODEL.capacity:," + str(BATT_MODEL["capacity"]) +"\n")
+    
+    file.close()
 
 def run_test(do_beeps, debug):
 
@@ -589,6 +643,6 @@ selection = prompt_choice(dialog_text, ["OK", "Cancel"])
 if selection == "Cancel":
     raise Exception("run_test aborted by user")
 
-run_test(do_beeps, debug)
+# run_test(do_beeps, debug)
 
 smu.beep(2400, 0.08)
