@@ -439,7 +439,7 @@ def extract_model(debug):
         print("\nsoc_index, soc, target_time, i, tstamp, voc, vload, esr")
         print(100, BATT_MODEL["soc"][100], 0, 1, BATT_MODEL["tstamp"][100], BATT_MODEL["voc"][100], BATT_MODEL["vload"][100], BATT_MODEL["esr"][100])
 
-    start_index = 1
+    start_index = 0
     soc_index = None
     target_time = None
     i = None
@@ -452,54 +452,55 @@ def extract_model(debug):
         i = start_index
 
         while (tstamp_tbl[i] - tstamp_tbl[0]) < target_time:
-            i = i + 1      # Need to make sure this does not exceed max_index
-
-            if (tstamp_tbl[i] - tstamp_tbl[0]) > target_time:
+            i = i + 1
             
-                if ((tstamp_tbl[i] - tstamp_tbl[0]) - target_time) < (target_time - (tstamp_tbl[i-1] - tstamp_tbl[0])):
+        if (tstamp_tbl[i] - tstamp_tbl[0]) > target_time:
+            
+            if ((tstamp_tbl[i] - tstamp_tbl[0]) - target_time) < (target_time - (tstamp_tbl[i-1] - tstamp_tbl[0])):
                 
-                    BATT_MODEL["voc"][soc_index] = voc_tbl[i]
-                    BATT_MODEL["vload"][soc_index] = vload_tbl[i]
-                    BATT_MODEL["esr"][soc_index] = esr_tbl[i]
-                    BATT_MODEL["tstamp"][soc_index] = tstamp_tbl[i] - tstamp_tbl[0]    # Calculate model timestamps relative to timestamp of first raw timestamp
-                    start_index = i
-
-                else:
-
-                    BATT_MODEL["voc"][soc_index] = voc_tbl[i-1]
-		    BATT_MODEL["vload"][soc_index] = vload_tbl[i-1]
-		    BATT_MODEL["esr"][soc_index] = esr_tbl[i-1]
-		    BATT_MODEL["tstamp"][soc_index] = tstamp_tbl[i-1] - tstamp_tbl[0]  # Calculate model timestamps relative to timestamp of first raw timestamp
-                    start_index = i - 1
-
-            else:   # if (tstamp_tbl[i] - tstamp_tbl[0]) == target_time
-
                 BATT_MODEL["voc"][soc_index] = voc_tbl[i]
-	        BATT_MODEL["vload"][soc_index] = vload_tbl[i]
-	        BATT_MODEL["esr"][soc_index] = esr_tbl[i]
-	        BATT_MODEL["tstamp"][soc_index] = tstamp_tbl[i] - tstamp_tbl[0]	   # Calculate model timestamps relative to timestamp of first raw timestamp
+                BATT_MODEL["vload"][soc_index] = vload_tbl[i]
+                BATT_MODEL["esr"][soc_index] = esr_tbl[i]
+                BATT_MODEL["tstamp"][soc_index] = tstamp_tbl[i] - tstamp_tbl[0]    # Calculate model timestamps relative to timestamp of first raw timestamp
                 start_index = i
 
-            if debug:
-                print(soc_index, BATT_MODEL["soc"][soc_index], target_time, i, BATT_MODEL["tstamp"][soc_index], BATT_MODEL["voc"][soc_index], BATT_MODEL["vload"][soc_index], BATT_MODEL["esr"][soc_index])
+            else:
+
+                BATT_MODEL["voc"][soc_index] = voc_tbl[i-1]
+                BATT_MODEL["vload"][soc_index] = vload_tbl[i-1]
+                BATT_MODEL["esr"][soc_index] = esr_tbl[i-1]
+                BATT_MODEL["tstamp"][soc_index] = tstamp_tbl[i-1] - tstamp_tbl[0]  # Calculate model timestamps relative to timestamp of first raw timestamp
+                start_index = i - 1
+
+        else:   # if (tstamp_tbl[i] - tstamp_tbl[0]) == target_time
+
+            BATT_MODEL["voc"][soc_index] = voc_tbl[i]
+            BATT_MODEL["vload"][soc_index] = vload_tbl[i]
+            BATT_MODEL["esr"][soc_index] = esr_tbl[i]
+            BATT_MODEL["tstamp"][soc_index] = tstamp_tbl[i] - tstamp_tbl[0]	   # Calculate model timestamps relative to timestamp of first raw timestamp
+            start_index = i
+
             
-        BATT_MODEL["soc"][0] = 0	# 0% state-of-charge
-        BATT_MODEL["voc"][0] = voc_tbl[max_index]
-        BATT_MODEL["vload"][0] = vload_tbl[max_index]
-        BATT_MODEL["esr"][0] = esr_tbl[max_index]
-        BATT_MODEL["tstamp"][0] = tstamp_tbl[max_index] - tstamp_tbl[0]	# Calculate model timestamps relative to timestamp of first raw timestamp
-
-        BATT_MODEL["capacity"] = Dround(BATT_MODEL_RAW["capacity"], 4)
-
         if debug:
-            print(0, BATT_MODEL["soc"][0], 100*model_interval, max_index, BATT_MODEL["tstamp"][0], BATT_MODEL["voc"][0], BATT_MODEL["vload"][0], BATT_MODEL["esr"][0])
-            print("\nBATT_MODEL[\"capacity\"] = " + str(BATT_MODEL["capacity"]))
+            print(soc_index, BATT_MODEL["soc"][soc_index], target_time, i, BATT_MODEL["tstamp"][soc_index], BATT_MODEL["voc"][soc_index], BATT_MODEL["vload"][soc_index], BATT_MODEL["esr"][soc_index])
+            
+    BATT_MODEL["soc"][0] = 0	# 0% state-of-charge
+    BATT_MODEL["voc"][0] = voc_tbl[max_index]
+    BATT_MODEL["vload"][0] = vload_tbl[max_index]
+    BATT_MODEL["esr"][0] = esr_tbl[max_index]
+    BATT_MODEL["tstamp"][0] = tstamp_tbl[max_index] - tstamp_tbl[0]	# Calculate model timestamps relative to timestamp of first raw timestamp
 
-        if len(tstamp_tbl) < 101:
-            dialog_text = "Fewer than 101 measurements were made.  As a result, your battery model will have some duplicate values.  Press OK to continue."
-            if do_beeps:
-                smu.beep(2400, 0.08)
-            prompt_choice(dialog_text, ["OK"])
+    BATT_MODEL["capacity"] = Dround(BATT_MODEL_RAW["capacity"], 4)
+
+    if debug:
+        print(0, BATT_MODEL["soc"][0], 100*model_interval, max_index, BATT_MODEL["tstamp"][0], BATT_MODEL["voc"][0], BATT_MODEL["vload"][0], BATT_MODEL["esr"][0])
+        print("\nBATT_MODEL[\"capacity\"] = " + str(BATT_MODEL["capacity"]))
+
+    if len(tstamp_tbl) < 101:
+        dialog_text = "Fewer than 101 measurements were made.  As a result, your battery model will have some duplicate values.  Press OK to continue."
+        if do_beeps:
+            smu.beep(2400, 0.08)
+        prompt_choice(dialog_text, ["OK"])
             
 def run_test(do_beeps, debug):
 
@@ -556,6 +557,6 @@ selection = prompt_choice(dialog_text, ["OK", "Cancel"])
 if selection == "Cancel":
     raise Exception("run_test aborted by user")
 
-run_test(do_beeps, debug)
+#run_test(do_beeps, debug)
 
 smu.beep(2400, 0.08)
