@@ -522,12 +522,52 @@ def do_curr_list_discharge(settle_delay,debug):
                     if debug:
                         print(counter, tstamp_tbl[counter], voc_tbl[counter], -smu.source.level, vload_tbl[counter], esr_tbl[counter])
 
-                    
+                while not(quit) and time.time() - t0 - tstart_step < curr_list_tbl[i]["duration"]:
 
-                    
-                    
-            
-    XXX
+                    # TODO wait up to meas_intrvl (? need to check blender logic)
+
+                    counter = counter + 1
+
+                    # Bug in PyMeasure... should be able to do smu.auto_zero = "ONCE"
+                    smu.auto_zero = True
+
+                    tmeas = time.time() - t0
+
+                    vload_tbl[counter], voc_tbl[counter], esr_tbl[counter] = meas_esr(0, 0.01)  # Proper settle_time is still TBD
+
+                    tstamp_tbl[counter] = tmeas
+
+                    if debug:
+                        print(counter, tstamp_tbl[counter], voc_tbl[counter], -smu.source.level, vload_tbl[counter], esr_tbl[counter])
+
+                    print("Total time=" + Dround(tmeas,0) + " s")
+
+                    print("Voc=" + "%0.2f".format(voc_tbl[counter]) + " Vload=" + "%0.2f".format(vload_tbl[counter]) + " ESR=" + "%0.4f".format(esr_tbl[counter]))
+
+                    if vload_tbl[counter] <= TEST_PARAM["vcutoff"]:
+                        quit = True
+
+            else:
+
+                if debug:
+                    print("\nDischarging at " + str(curr_list_tbl[i]["current"]) + "A for " + str(curr_list_tbl[i]["duration"]) + "s\n")
+
+                print("Discharging at " + str(curr_list_tbl[i]["current"]) + "A")
+                delay(curr_list_tbl[i]["duration"])
+
+            if quit:
+                break
+
+    smu.current = 0
+    smu.source_enabled = False
+
+    TEST_PARAM["discharge_stop_time"] = str(datetime.now())
+
+    BATT_MODEL_RAW["capacity"] = TEST_PARAM["discharge_curr_list_average_curr"] * tstamp_tbl[counter] / 3600  # Current in amps; timestamp in seconds; 3600 s/hr
+
+    if debug:
+        print("\nBATT_MODEL_RAW[\"capacity\"] = " + str(BATT_MODEL_RAW["capacity"]))
+        print("\nTEST_PARAM[\"discharge_stop_time\"] = "+ TEST_PARAM["discharge_stop_time"])
     
 def extract_model(debug):
 
