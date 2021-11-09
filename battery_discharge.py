@@ -442,8 +442,93 @@ def do_curr_list_discharge(settle_delay,debug):
         print("max_dur_index = " + str(max_dur_index))
         print("\nmeas_intrvl = "+ str(meas_intrvl))
 
-    raise Exception("do_curr_list_discharge not yet implemented")
+    # Initialize SMU output
+    smu.source_current_range = TEST_PARAM["max_discharge_current"]  # Considering changing to autorange depending on required dynamic range
+    smu.source_current = 0
 
+    TEST_PARAM["discharge_start_time"] = str(datetime.now())
+
+    smu.source_enabled = True
+
+    if debug:
+        print("\nTEST_PARAM[\"discharge_start_time\"] = " + TEST_PARAM["discharge_start_time"])
+        print("\ncounter, tstamp, voc, iload, vload, esr")
+
+    t0 = time.time()
+
+    if max_dur_index == 0:
+
+        counter = 0
+        
+    else:
+
+        counter = 1
+
+        smu.current = -curr_list_tbl[max_dur_index]["current"]   # Negative current because drawing current from battery
+
+        # Allow some settling time; required time is TBD
+        if settle_delay - azero-duration > 0:
+            delay(settle_delay - azero_duration)
+
+      	# Bug in PyMeasure... should be able to do smu.auto_zero = "ONCE"
+        smu.auto_zero = True  
+
+        # TODO start Trigger Timer 1
+
+        tmeas = time.time() - t0
+
+        # MeasESR(test_curr, settle_time)
+        vload_tbl[counter], voc_tbl[counter], esr_tbl[counter] = meas_esr(0, 0.01)  # Proper settle_time is still TBD
+
+        tstamp_tbl[counter] = tstart
+
+        if debug:
+            print(counter, tstamp_tbl[counter], voc_tbl[counter], -smu.source.level, vload_tbl[counter], esr_tbl[counter])
+
+        if vload_tbl[counter] <= TEST_PARAM["vcutoff"]:
+            quit = True
+        
+    while not(quit):
+
+        for i in range(0, npoints):
+
+            smu.current = -curr_list_tbl[i]["current"]   # Negative current because drawing current from battery
+
+            tstart_step = time.time() - t0
+
+            if curr_list_tbl[i]["current"] == curr_list_tbl[max_dur_index]["current"]:
+
+                # Allow some settling time; required time is TBD.
+                if settle_delay - azero_durtion > 0:
+                    delay(settle_delay - azero_duration)
+
+                if counter == 0:
+
+                    counter = counter + 1
+
+                    # Bug in PyMeasure... should be able to do smu.auto_zero = "ONCE"
+                    smu.auto_zero = True
+
+                    # TODO  start Trigger Timer 1
+
+                    tmeas = time.time() - t0
+
+                    vload_tbl[counter], voc_tbl[counter], esr_tbl[counter] = meas_esr(0, 0.01)  # Proper settle_time is still TBD
+                    tstamp_tbl[counter] = tmeas
+
+                    if vload_tbl[counter] <= TEST_PARAM["vcutoff"]:
+                        quit = True
+
+                    if debug:
+                        print(counter, tstamp_tbl[counter], voc_tbl[counter], -smu.source.level, vload_tbl[counter], esr_tbl[counter])
+
+                    
+
+                    
+                    
+            
+    XXX
+    
 def extract_model(debug):
 
     # Create local aliases for global tables
