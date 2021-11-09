@@ -422,7 +422,7 @@ def do_curr_list_discharge(settle_delay,debug):
     azero_duration = 2 * smu.voltage_nplc / linefreq + azero_overhead  # Approximate execution time of autozero
 
     npoints = len(curr_list_tbl)
-    max_dur_index = TEST_PARAM["curr_list_tbl_max_dur_index"]
+    max_dur_index = TEST_PARAM["discharge_curr_list_max_dur_index"]
 
     meas_intrvl = TEST_PARAM["measure_interval"]
     loop_delay2 = None
@@ -458,16 +458,16 @@ def do_curr_list_discharge(settle_delay,debug):
 
     if max_dur_index == 0:
 
-        counter = 0
+        counter = -1
         
     else:
 
-        counter = 1
+        counter = 0
 
-        smu.current = -curr_list_tbl[max_dur_index]["current"]   # Negative current because drawing current from battery
+        smu.source_current = -curr_list_tbl[max_dur_index]["current"]   # Negative current because drawing current from battery
 
         # Allow some settling time; required time is TBD
-        if settle_delay - azero-duration > 0:
+        if settle_delay - azero_duration > 0:
             delay(settle_delay - azero_duration)
 
       	# Bug in PyMeasure... should be able to do smu.auto_zero = "ONCE"
@@ -478,10 +478,15 @@ def do_curr_list_discharge(settle_delay,debug):
 
         tmeas = time.time() - t0
 
+        vload_tbl.append(None)
+        voc_tbl.append(None)
+        esr_tbl.append(None)
+        tstamp_tbl.append(None)
+        
         # MeasESR(test_curr, settle_time)
         vload_tbl[counter], voc_tbl[counter], esr_tbl[counter] = meas_esr(0, 0.01)  # Proper settle_time is still TBD
 
-        tstamp_tbl[counter] = tstart
+        tstamp_tbl[counter] = tmeas
 
         if debug:
             print(counter, tstamp_tbl[counter], voc_tbl[counter], -smu.source.level, vload_tbl[counter], esr_tbl[counter])
@@ -503,7 +508,7 @@ def do_curr_list_discharge(settle_delay,debug):
                 if settle_delay - azero_durtion > 0:
                     delay(settle_delay - azero_duration)
 
-                if counter == 0:
+                if counter == -1:
 
                     counter = counter + 1
 
@@ -515,6 +520,11 @@ def do_curr_list_discharge(settle_delay,debug):
 
                     tmeas = time.time() - t0
 
+                    vload_tbl.append(None)
+                    voc_tbl.append(None)
+                    esr_tbl.append(None)
+                    tstamp_tbl.append(None)
+        
                     vload_tbl[counter], voc_tbl[counter], esr_tbl[counter] = meas_esr(0, 0.01)  # Proper settle_time is still TBD
                     tstamp_tbl[counter] = tmeas
 
@@ -537,6 +547,11 @@ def do_curr_list_discharge(settle_delay,debug):
 
                     tmeas = time.time() - t0
 
+                    vload_tbl.append(None)
+                    voc_tbl.append(None)
+                    esr_tbl.append(None)
+                    tstamp_tbl.append(None)
+        
                     vload_tbl[counter], voc_tbl[counter], esr_tbl[counter] = meas_esr(0, 0.01)  # Proper settle_time is still TBD
 
                     tstamp_tbl[counter] = tmeas
@@ -796,8 +811,8 @@ def run_test(do_beeps, debug):
 
     save_setup_and_raw_data(debug)
 
-debug = False
-do_beeps = True
+debug = True
+do_beeps = False
 
 print("\nBattery Discharge Driver for Keithley 2400 SourceMeter\n")
 print("Follow all manufacturer's guidelines to ensure safe operation when\ndischarging a battery (especially a LITHIUM ION battery)!")
