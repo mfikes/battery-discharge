@@ -473,7 +473,8 @@ def do_curr_list_discharge(settle_delay,debug):
       	# Bug in PyMeasure... should be able to do smu.auto_zero = "ONCE"
         smu.auto_zero = True  
 
-        # TODO start Trigger Timer 1
+        # Start Trigger Timer 1
+        t1 = time.time() 
 
         tmeas = time.time() - t0
 
@@ -509,7 +510,8 @@ def do_curr_list_discharge(settle_delay,debug):
                     # Bug in PyMeasure... should be able to do smu.auto_zero = "ONCE"
                     smu.auto_zero = True
 
-                    # TODO  start Trigger Timer 1
+                    # Start Trigger Timer 1
+                    t1 = time.time()
 
                     tmeas = time.time() - t0
 
@@ -524,7 +526,9 @@ def do_curr_list_discharge(settle_delay,debug):
 
                 while not(quit) and time.time() - t0 - tstart_step < curr_list_tbl[i]["duration"]:
 
-                    # TODO wait up to meas_intrvl (? need to check blender logic)
+                    # Wait up to meas_intrvl
+                    while time.time() - t1 < meas_intrvl:
+                        delay(0.001)
 
                     counter = counter + 1
 
