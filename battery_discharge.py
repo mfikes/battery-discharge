@@ -489,7 +489,7 @@ def do_curr_list_discharge(settle_delay,debug):
         tstamp_tbl[counter] = tmeas
 
         if debug:
-            print(counter, tstamp_tbl[counter], voc_tbl[counter], -smu.source.level, vload_tbl[counter], esr_tbl[counter])
+            print(counter, tstamp_tbl[counter], voc_tbl[counter], -smu.source_current, vload_tbl[counter], esr_tbl[counter])
 
         if vload_tbl[counter] <= TEST_PARAM["vcutoff"]:
             quit = True
@@ -498,14 +498,14 @@ def do_curr_list_discharge(settle_delay,debug):
 
         for i in range(0, npoints):
 
-            smu.current = -curr_list_tbl[i]["current"]   # Negative current because drawing current from battery
+            smu.source_current = -curr_list_tbl[i]["current"]   # Negative current because drawing current from battery
 
             tstart_step = time.time() - t0
 
             if curr_list_tbl[i]["current"] == curr_list_tbl[max_dur_index]["current"]:
 
                 # Allow some settling time; required time is TBD.
-                if settle_delay - azero_durtion > 0:
+                if settle_delay - azero_duration > 0:
                     delay(settle_delay - azero_duration)
 
                 if counter == -1:
@@ -532,7 +532,7 @@ def do_curr_list_discharge(settle_delay,debug):
                         quit = True
 
                     if debug:
-                        print(counter, tstamp_tbl[counter], voc_tbl[counter], -smu.source.level, vload_tbl[counter], esr_tbl[counter])
+                        print(counter, tstamp_tbl[counter], voc_tbl[counter], -smu.source_current, vload_tbl[counter], esr_tbl[counter])
 
                 while not(quit) and time.time() - t0 - tstart_step < curr_list_tbl[i]["duration"]:
 
@@ -557,9 +557,9 @@ def do_curr_list_discharge(settle_delay,debug):
                     tstamp_tbl[counter] = tmeas
 
                     if debug:
-                        print(counter, tstamp_tbl[counter], voc_tbl[counter], -smu.source.level, vload_tbl[counter], esr_tbl[counter])
+                        print(counter, tstamp_tbl[counter], voc_tbl[counter], -smu.source_current, vload_tbl[counter], esr_tbl[counter])
 
-                    print("Total time=" + Dround(tmeas,0) + " s")
+                    print("Total time=" + str(Dround(tmeas,0)) + " s")
 
                     print("Voc=" + "%0.2f".format(voc_tbl[counter]) + " Vload=" + "%0.2f".format(vload_tbl[counter]) + " ESR=" + "%0.4f".format(esr_tbl[counter]))
 
@@ -577,7 +577,7 @@ def do_curr_list_discharge(settle_delay,debug):
             if quit:
                 break
 
-    smu.current = 0
+    smu.source_current = 0
     smu.source_enabled = False
 
     TEST_PARAM["discharge_stop_time"] = str(datetime.now())
