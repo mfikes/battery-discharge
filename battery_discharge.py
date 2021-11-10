@@ -422,7 +422,7 @@ def do_curr_list_discharge(settle_delay,debug):
     azero_duration = 2 * smu.voltage_nplc / linefreq + azero_overhead  # Approximate execution time of autozero
 
     npoints = len(curr_list_tbl)
-    max_dur_index = TEST_PARAM["curr_list_tbl_max_dur_index"]
+    max_dur_index = TEST_PARAM["discharge_curr_list_max_dur_index"]
 
     meas_intrvl = TEST_PARAM["measure_interval"]
     loop_delay2 = None
@@ -442,8 +442,152 @@ def do_curr_list_discharge(settle_delay,debug):
         print("max_dur_index = " + str(max_dur_index))
         print("\nmeas_intrvl = "+ str(meas_intrvl))
 
-    raise Exception("do_curr_list_discharge not yet implemented")
+    # Initialize SMU output
+    smu.source_current_range = TEST_PARAM["max_discharge_current"]  # Considering changing to autorange depending on required dynamic range
+    smu.source_current = 0
 
+    TEST_PARAM["discharge_start_time"] = str(datetime.now())
+
+    smu.source_enabled = True
+
+    if debug:
+        print("\nTEST_PARAM[\"discharge_start_time\"] = " + TEST_PARAM["discharge_start_time"])
+        print("\ncounter, tstamp, voc, iload, vload, esr")
+
+    t0 = time.time()
+
+    if max_dur_index == 0:
+
+        counter = -1
+        
+    else:
+
+        counter = 0
+
+        smu.source_current = -curr_list_tbl[max_dur_index]["current"]   # Negative current because drawing current from battery
+
+        # Allow some settling time; required time is TBD
+        if settle_delay - azero_duration > 0:
+            delay(settle_delay - azero_duration)
+
+      	# Bug in PyMeasure... should be able to do smu.auto_zero = "ONCE"
+        smu.auto_zero = True  
+
+        # Start Trigger Timer 1
+        t1 = time.time() 
+
+        tmeas = time.time() - t0
+
+        vload_tbl.append(None)
+        voc_tbl.append(None)
+        esr_tbl.append(None)
+        tstamp_tbl.append(None)
+        
+        # MeasESR(test_curr, settle_time)
+        vload_tbl[counter], voc_tbl[counter], esr_tbl[counter] = meas_esr(0, 0.01)  # Proper settle_time is still TBD
+
+        tstamp_tbl[counter] = tmeas
+
+        if debug:
+            print(counter, tstamp_tbl[counter], voc_tbl[counter], -smu.source_current, vload_tbl[counter], esr_tbl[counter])
+
+        if vload_tbl[counter] <= TEST_PARAM["vcutoff"]:
+            quit = True
+        
+    while not(quit):
+
+        for i in range(0, npoints):
+
+            smu.source_current = -curr_list_tbl[i]["current"]   # Negative current because drawing current from battery
+
+            tstart_step = time.time() - t0
+
+            if curr_list_tbl[i]["current"] == curr_list_tbl[max_dur_index]["current"]:
+
+                # Allow some settling time; required time is TBD.
+                if settle_delay - azero_duration > 0:
+                    delay(settle_delay - azero_duration)
+
+                if counter == -1:
+
+                    counter = counter + 1
+
+                    # Bug in PyMeasure... should be able to do smu.auto_zero = "ONCE"
+                    smu.auto_zero = True
+
+                    # Start Trigger Timer 1
+                    t1 = time.time()
+
+                    tmeas = time.time() - t0
+
+                    vload_tbl.append(None)
+                    voc_tbl.append(None)
+                    esr_tbl.append(None)
+                    tstamp_tbl.append(None)
+        
+                    vload_tbl[counter], voc_tbl[counter], esr_tbl[counter] = meas_esr(0, 0.01)  # Proper settle_time is still TBD
+                    tstamp_tbl[counter] = tmeas
+
+                    if vload_tbl[counter] <= TEST_PARAM["vcutoff"]:
+                        quit = True
+
+                    if debug:
+                        print(counter, tstamp_tbl[counter], voc_tbl[counter], -smu.source_current, vload_tbl[counter], esr_tbl[counter])
+
+                while not(quit) and time.time() - t0 - tstart_step < curr_list_tbl[i]["duration"]:
+
+                    # Wait up to meas_intrvl
+                    while time.time() - t1 < meas_intrvl:
+                        delay(0.001)
+
+                    counter = counter + 1
+
+                    # Bug in PyMeasure... should be able to do smu.auto_zero = "ONCE"
+                    smu.auto_zero = True
+
+                    tmeas = time.time() - t0
+
+                    vload_tbl.append(None)
+                    voc_tbl.append(None)
+                    esr_tbl.append(None)
+                    tstamp_tbl.append(None)
+        
+                    vload_tbl[counter], voc_tbl[counter], esr_tbl[counter] = meas_esr(0, 0.01)  # Proper settle_time is still TBD
+
+                    tstamp_tbl[counter] = tmeas
+
+                    if debug:
+                        print(counter, tstamp_tbl[counter], voc_tbl[counter], -smu.source_current, vload_tbl[counter], esr_tbl[counter])
+
+                    print("Total time=" + str(Dround(tmeas,0)) + " s")
+
+                    print("Voc=" + "{0:.2f}".format(voc_tbl[counter]) + " Vload=" + "{0:.2f}".format(vload_tbl[counter]) + " ESR=" + "{0:.4f}".format(esr_tbl[counter]))
+
+                    if vload_tbl[counter] <= TEST_PARAM["vcutoff"]:
+                        quit = True
+
+            else:
+
+                if debug:
+                    print("\nDischarging at " + str(curr_list_tbl[i]["current"]) + "A for " + str(curr_list_tbl[i]["duration"]) + "s\n")
+
+                print("Discharging at " + str(curr_list_tbl[i]["current"]) + "A")
+                delay(curr_list_tbl[i]["duration"])
+
+            if quit:
+                break
+
+    smu.source_current = 0
+    smu.source_enabled = False
+
+    TEST_PARAM["discharge_stop_time"] = str(datetime.now())
+
+    BATT_MODEL_RAW["capacity"] = TEST_PARAM["discharge_curr_list_average_curr"] * tstamp_tbl[counter] / 3600  # Current in amps; timestamp in seconds; 3600 s/hr
+
+    if debug:
+        print("\nBATT_MODEL_RAW[\"capacity\"] = " + str(BATT_MODEL_RAW["capacity"]))
+        print("\nTEST_PARAM[\"discharge_stop_time\"] = "+ TEST_PARAM["discharge_stop_time"])
+    
 def extract_model(debug):
 
     # Create local aliases for global tables
@@ -594,8 +738,8 @@ def save_setup_and_raw_data(debug):
             file.write(","+ str(i+1) + "," + str(TEST_PARAM["discharge_curr_list"][i]["current"]) + "," + str(TEST_PARAM["discharge_curr_list"][i]["duration"])+"\n")
         file.write("TEST_PARAM.discharge_curr_list.average_curr:,," + str(TEST_PARAM["discharge_curr_list_average_curr"]) + "\n")
         file.write("TEST_PARAM.discharge_curr_list.duration:,,," + str(TEST_PARAM["discharge_curr_list_duration"]) + "\n")
-        file.write("TEST_PARAM.discharge_curr_list.max_dur_index:," + str(TEST_PARAM["discharge_curr_list_max_dur_index"]) + "\n")
-        file.write("TEST_PARAM.discharge_curr_list.max_discharge_current:," + str(TEST_PARAM["discharge_curr_list_max_discharge_current"]) + "\n")
+        file.write("TEST_PARAM.discharge_curr_list.max_dur_index:," + str(TEST_PARAM["discharge_curr_list_max_dur_index"]+1) + "\n")
+        file.write("TEST_PARAM.max_discharge_current:," + str(TEST_PARAM["max_discharge_current"]) + "\n")
     file.write("\n")
     file.write("TEST_PARAM.measure_interval:," + str(TEST_PARAM["measure_interval"]))
     file.write("\n")
