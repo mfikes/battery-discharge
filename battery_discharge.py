@@ -738,7 +738,7 @@ def save_setup_and_raw_data(debug):
             file.write(","+ str(i+1) + "," + str(TEST_PARAM["discharge_curr_list"][i]["current"]) + "," + str(TEST_PARAM["discharge_curr_list"][i]["duration"])+"\n")
         file.write("TEST_PARAM.discharge_curr_list.average_curr:,," + str(TEST_PARAM["discharge_curr_list_average_curr"]) + "\n")
         file.write("TEST_PARAM.discharge_curr_list.duration:,,," + str(TEST_PARAM["discharge_curr_list_duration"]) + "\n")
-        file.write("TEST_PARAM.discharge_curr_list.max_dur_index:," + str(TEST_PARAM["discharge_curr_list_max_dur_index"]) + "\n")
+        file.write("TEST_PARAM.discharge_curr_list.max_dur_index:," + str(TEST_PARAM["discharge_curr_list_max_dur_index"]+1) + "\n")
         file.write("TEST_PARAM.max_discharge_current:," + str(TEST_PARAM["max_discharge_current"]) + "\n")
     file.write("\n")
     file.write("TEST_PARAM.measure_interval:," + str(TEST_PARAM["measure_interval"]))
