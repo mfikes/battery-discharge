@@ -811,8 +811,8 @@ def run_test(do_beeps, debug):
 
     save_setup_and_raw_data(debug)
 
-debug = True
-do_beeps = False
+debug = False
+do_beeps = True
 
 print("\nBattery Discharge Driver for Keithley 2400 SourceMeter\n")
 print("Follow all manufacturer's guidelines to ensure safe operation when\ndischarging a battery (especially a LITHIUM ION battery)!")
