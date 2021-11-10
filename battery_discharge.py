@@ -561,7 +561,7 @@ def do_curr_list_discharge(settle_delay,debug):
 
                     print("Total time=" + str(Dround(tmeas,0)) + " s")
 
-                    print("Voc=" + "%0.2f".format(voc_tbl[counter]) + " Vload=" + "%0.2f".format(vload_tbl[counter]) + " ESR=" + "%0.4f".format(esr_tbl[counter]))
+                    print("Voc=" + "{0:.2f}".format(voc_tbl[counter]) + " Vload=" + "{0:.2f}".format(vload_tbl[counter]) + " ESR=" + "{0:.4f}".format(esr_tbl[counter]))
 
                     if vload_tbl[counter] <= TEST_PARAM["vcutoff"]:
                         quit = True
