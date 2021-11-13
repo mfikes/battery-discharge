@@ -36,7 +36,7 @@ import inquirer
 
 # Prologix USB to GPIB
 
-adapter = PrologixAdapter('/dev/cu.usbserial-PXEFMYB9')
+adapter = PrologixAdapter('/dev/cu.usbserial-PXEFMYB9', serial_timeout=0.2)
 smu = Keithley2400(adapter.gpib(26))
 
 # USB to RS-232 cable
@@ -249,8 +249,8 @@ def config_test(do_beeps, debug):
             if TEST_PARAM["discharge_curr_list"][i]["current"] < 1e-6 or TEST_PARAM["discharge_curr_list"][i]["current"] > max_allowed_current:
                 raise ValueError("Unallowed discharge current: " + str(TEST_PARAM["discharge_curr_list"][i]["current"]))
 
-            TEST_PARAM["discharge_curr_list"][i]["duration"] = float(input("Curr #" + str(i+1) + " Duration (s, 500us min): "))
-            if TEST_PARAM["discharge_curr_list"][i]["duration"] < 0.0005:
+            TEST_PARAM["discharge_curr_list"][i]["duration"] = float(input("Curr #" + str(i+1) + " Duration (s, 1s min): "))
+            if TEST_PARAM["discharge_curr_list"][i]["duration"] < 1:
                 raise ValueError("Unallowed discharge duration: " + str(TEST_PARAM["discharge_curr_list"][i]["duration"]))
 
             average_curr = average_curr + TEST_PARAM["discharge_curr_list"][i]["current"] * TEST_PARAM["discharge_curr_list"][i]["duration"]
@@ -318,8 +318,8 @@ def config_test(do_beeps, debug):
         print("\ncov_default = "+ str(cov_default))
         print("TEST_PARAM[\"vcutoff\"] = "+ str(TEST_PARAM["vcutoff"]))
 
-    TEST_PARAM["measure_interval"] = float(input("ESR Meas Interval (0.08 to 600s): "))
-    if TEST_PARAM["measure_interval"] < 0.08 or TEST_PARAM["measure_interval"] > 600:
+    TEST_PARAM["measure_interval"] = float(input("ESR Meas Interval (1 to 600s): "))
+    if TEST_PARAM["measure_interval"] < 1 or TEST_PARAM["measure_interval"] > 600:
         raise ValueError("Unalllowed measure interval: " + str(TEST_PARAM["measure_interval"]))
 
     if debug:
