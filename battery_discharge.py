@@ -372,8 +372,7 @@ def do_constant_curr_discharge(debug):
 
     while (quit == False):
 
-        # Bug in PyMeasure... should be able to do smu.auto_zero = "ONCE"
-        smu.auto_zero = True
+        smu.auto_zero = "ONCE"
 
         tstart_meas_intrvl = round(time.time() - t0, 3)
 
@@ -478,8 +477,7 @@ def do_curr_list_discharge(settle_delay,debug):
         if settle_delay - azero_duration > 0:
             delay(settle_delay - azero_duration)
 
-      	# Bug in PyMeasure... should be able to do smu.auto_zero = "ONCE"
-        smu.auto_zero = True  
+        smu.auto_zero = "ONCE"
 
         # Start Trigger Timer 1
         t1 = time.time() 
@@ -520,8 +518,7 @@ def do_curr_list_discharge(settle_delay,debug):
 
                     counter = counter + 1
 
-                    # Bug in PyMeasure... should be able to do smu.auto_zero = "ONCE"
-                    smu.auto_zero = True
+                    smu.auto_zero = "ONCE"
 
                     # Start Trigger Timer 1
                     t1 = time.time()
@@ -550,8 +547,7 @@ def do_curr_list_discharge(settle_delay,debug):
 
                     counter = counter + 1
 
-                    # Bug in PyMeasure... should be able to do smu.auto_zero = "ONCE"
-                    smu.auto_zero = True
+                    smu.auto_zero = "ONCE"
 
                     tmeas = time.time() - t0
 
