@@ -340,8 +340,7 @@ def do_constant_curr_discharge(debug):
                              # Includes execution overhead for timer.cleartime() y=timer.gettime(), which is approx 10us.
 			     # Values determined using 2461 with Rev 1.6.1a FW
 
-    linefreq = float(smu.ask(":SYST:LFR?"))
-    azero_duration = 2 * smu.voltage_nplc / linefreq + azero_overhead  # Approximate execution time of autozero
+    azero_duration = 2 * smu.voltage_nplc / smu.line_frequency + azero_overhead  # Approximate execution time of autozero
 
     meas_intrvl = TEST_PARAM["measure_interval"]
     loop_delay = max(meas_intrvl / 10000, 0.001)
@@ -426,8 +425,7 @@ def do_curr_list_discharge(settle_delay,debug):
                              # Includes execution overhead for timer.cleartime() y=timer.gettime(), which is approx 10us.
                              # Values determined using 2461 with Rev 1.6.1a FW
 
-    linefreq = float(smu.ask(":SYST:LFR?"))
-    azero_duration = 2 * smu.voltage_nplc / linefreq + azero_overhead  # Approximate execution time of autozero
+    azero_duration = 2 * smu.voltage_nplc / smu.line_frequency + azero_overhead  # Approximate execution time of autozero
 
     npoints = len(curr_list_tbl)
     max_dur_index = TEST_PARAM["discharge_curr_list_max_dur_index"]
