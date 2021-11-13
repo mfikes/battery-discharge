@@ -32,9 +32,17 @@ import inquirer
 
 # ********** Instrument communication **********
 
-# Revise these for your GPIB / Serial Setup
+# Revise to set smu variable for your particular GPIB / Serial Setup
+
+# Prologix USB to GPIB
+
 adapter = PrologixAdapter('/dev/cu.usbserial-PXEFMYB9')
 smu = Keithley2400(adapter.gpib(26))
+
+# USB to RS-232 cable
+
+#smu = Keithley2400('ASRL/dev/cu.usbserial-FTCGVYZA::INSTR',
+#                   baud_rate=9600, write_termination='\r', read_termination='\r')
 
 # ********** Declare global tables **********
 
