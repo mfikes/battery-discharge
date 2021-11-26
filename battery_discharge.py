@@ -750,7 +750,7 @@ def save_setup_and_raw_data(debug):
     file.write("BATT_MODEL_RAW:,Index,Timestamp,Voc,Vload,ESR\n")
     for i in range(0,len(BATT_MODEL_RAW["tstamp"])):
         file.write("BATT_MODEL_RAW:,"+str(i+1)+","+ str(BATT_MODEL_RAW["tstamp"][i]) + "," + str(BATT_MODEL_RAW["voc"][i]) + "," + str(BATT_MODEL_RAW["vload"][i]) + "," + format(BATT_MODEL["esr"][i], '.7g') +"\n")
-    file.write("BATT_MODEL_RAW.capacity:," + str(BATT_MODEL_RAW["capacity"]) +"\n")
+    file.write("BATT_MODEL_RAW.capacity:," + format(BATT_MODEL_RAW["capacity"], '.7g') +"\n")
     file.write("\n")
     file.write("BATT_MODEL:,Index,Timestamp,Voc,Vload,ESR\n")
     for i in range(0, len(BATT_MODEL["tstamp"])):
