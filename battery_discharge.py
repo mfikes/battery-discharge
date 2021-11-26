@@ -363,7 +363,7 @@ def do_constant_curr_discharge(debug):
     smu.source_current_range = TEST_PARAM["max_discharge_current"]  # Use fixed source range
     smu.source_current = -1*TEST_PARAM["discharge_current"]   # Negative current because drawing current from battery
 
-    TEST_PARAM["discharge_start_time"] = str(datetime.now())
+    TEST_PARAM["discharge_start_time"] = datetime.now().strftime("%m/%d/%y %H:%M:%S")
     smu.source_enabled = True
 
     delay(0.1)	# Allow some settling time; required time is TBD
@@ -410,7 +410,7 @@ def do_constant_curr_discharge(debug):
     smu.source_current = 0
     smu.source_enabled = False
 
-    TEST_PARAM["discharge_stop_time"] = str(datetime.now())
+    TEST_PARAM["discharge_stop_time"] = datetime.now().strftime("%m/%d/%y %H:%M:%S")
 
     BATT_MODEL_RAW["capacity"] = TEST_PARAM["discharge_current"] * tstamp_tbl[counter] / 3600
 
@@ -461,7 +461,7 @@ def do_curr_list_discharge(settle_delay,debug):
     smu.source_current_range = TEST_PARAM["max_discharge_current"]  # Considering changing to autorange depending on required dynamic range
     smu.source_current = 0
 
-    TEST_PARAM["discharge_start_time"] = str(datetime.now())
+    TEST_PARAM["discharge_start_time"] = datetime.now().strftime("%m/%d/%y %H:%M:%S")
 
     smu.source_enabled = True
 
@@ -592,7 +592,7 @@ def do_curr_list_discharge(settle_delay,debug):
     smu.source_current = 0
     smu.source_enabled = False
 
-    TEST_PARAM["discharge_stop_time"] = str(datetime.now())
+    TEST_PARAM["discharge_stop_time"] = datetime.now().strftime("%m/%d/%y %H:%M:%S")
 
     BATT_MODEL_RAW["capacity"] = TEST_PARAM["discharge_curr_list_average_curr"] * tstamp_tbl[counter] / 3600  # Current in amps; timestamp in seconds; 3600 s/hr
 
@@ -742,7 +742,7 @@ def save_setup_and_raw_data(debug):
         file.write("TEST_PARAM.discharge_curr_list.max_dur_index:," + str(TEST_PARAM["discharge_curr_list_max_dur_index"]+1) + "\n")
         file.write("TEST_PARAM.max_discharge_current:," + str(TEST_PARAM["max_discharge_current"]) + "\n")
     file.write("\n")
-    file.write("TEST_PARAM.measure_interval:," + str(TEST_PARAM["measure_interval"]))
+    file.write("TEST_PARAM.measure_interval:," + str(TEST_PARAM["measure_interval"]) + "\n")
     file.write("\n")
     file.write("TEST_PARAM.discharge_start_time:," + TEST_PARAM["discharge_start_time"] + "\n")
     file.write("TEST_PARAM.discharge_stop_time:," + TEST_PARAM["discharge_stop_time"] + "\n")
