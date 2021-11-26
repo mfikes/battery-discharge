@@ -163,8 +163,8 @@ def config_system(do_beeps, debug):
         print("\nsmu.compliance_voltage = " + str(smu.compliance_voltage))
         print("\nTEST_PARAM[\"initial_voc\"] = " + str(TEST_PARAM["initial_voc"]))
 
-    if TEST_PARAM["initial_voc"] <= 0:
-        raise ValueError("Negative or zero Initial Voc detected; config_system aborted")
+    if TEST_PARAM["initial_voc"] < 0.1:
+        raise ValueError("Initial Voc below 0.1 V; config_system aborted")
 
     print("Measured battery voltage = " + "{0:.3f}".format(TEST_PARAM["initial_voc"]) + "V.\nChoose OK to continue or Cancel to quit.")
     if do_beeps:
