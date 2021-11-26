@@ -722,7 +722,7 @@ def save_setup_and_raw_data(debug):
     smu_id_info = smu.id.split(",")
     file.write("SourceMeter Model:," + smu_id_info[1].lstrip("MODEL ") +"\n")
     file.write("SourceMeter S/N:," + smu_id_info[2] + "\n")
-    file.write("SourceMeter Firmware:," + smu_id_info[3] + "\n")
+    file.write("SourceMeter Firmware:," + smu_id_info[3].split(" ")[0] + "\n")
     file.write("\n")
     file.write("TEST_PARAM.terminals:," + TEST_PARAM["terminals"].upper()  + " TERMINALS\n")
     file.write("\n")
