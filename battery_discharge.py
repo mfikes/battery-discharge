@@ -325,6 +325,16 @@ def config_test(do_beeps, debug):
     if debug:
         print("\nTEST_PARAM[\"measure_interval\"] = " + str(TEST_PARAM["measure_interval"]))
 
+    filename = input("Enter battery model filename: ")
+    if filename == "":
+        filename = "unnamed"
+        print("No name given, using \"unnamed\"")
+
+    TEST_PARAM["batt_model_filename"] = filename + ".csv"
+
+    choice = prompt_choice("Do you want to save setup info and raw data?", ["YES", "NO"])
+    TEST_PARAM["save_setup_and_raw_data"] = choice == "YES"
+
 def do_constant_curr_discharge(debug):
 
     # Create local aliases for global tables
@@ -676,19 +686,11 @@ def extract_model(debug):
 
     if len(tstamp_tbl) < 101:
         print("Fewer than 101 measurements were made.  As a result, your\nbattery model will have some duplicate values.")
-        if do_beeps:
-            smu.beep(2400, 0.08)
-        prompt_choice("Proceed?", ["OK"])
 
 def save_model(debug):
     print("Saving Battery Discharge Model\n")
     
-    filename = input("Enter file name: ")
-    if filename == "":
-        filename = "unnamed"
-        print("No name given, using \"unnamed\"")
-
-    filename = filename + ".csv"
+    filename = TEST_PARAM["batt_model_filename"]
 
     file = open(filename, "w")
 
@@ -701,15 +703,12 @@ def save_model(debug):
         file.write(str(BATT_MODEL["soc"][i]) + ", " + str(BATT_MODEL["voc"][i]) + ", " + str(BATT_MODEL["esr"][i]) + " \n")
     file.close()
 
-    TEST_PARAM["batt_model_filename"] = filename
-
 def save_setup_and_raw_data(debug):
 
     if debug:
         print("\nIn save_setup_and_raw_data()")
 
-    choice = prompt_choice("Do you want to save setup info and raw data?", ["YES", "NO"])
-    if choice == "NO":
+    if not TEST_PARAM["save_setup_and_raw_data"]:
         return
 
     filename = TEST_PARAM["batt_model_filename"][:-4] + "_SetupAndRawData.csv"
