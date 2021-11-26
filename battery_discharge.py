@@ -725,7 +725,7 @@ def save_setup_and_raw_data(debug):
     file.write("SourceMeter S/N:," + smu_id_info[2] + "\n")
     file.write("SourceMeter Firmware:," + smu_id_info[3] + "\n")
     file.write("\n")
-    file.write("TEST_PARAM.terminals:," + TEST_PARAM["terminals"] + "\n")
+    file.write("TEST_PARAM.terminals:," + TEST_PARAM["terminals"].upper()  + " TERMINALS\n")
     file.write("\n")
     file.write("TEST_PARAM.initial_voc:," + str(TEST_PARAM["initial_voc"]) + "\n")
     file.write("TEST_PARAM.vcutoff:," + str(TEST_PARAM["vcutoff"]) + "\n")
